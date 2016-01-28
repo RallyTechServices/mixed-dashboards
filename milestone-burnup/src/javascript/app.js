@@ -9,7 +9,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     ],
     
     mixins: [
-        'Rally.apps.charts.DateMixin'
+        'Rally.apps.charts.DateMixin',
+        'Rally.Messageable'
     ],
 
     integrationHeaders : {
@@ -18,26 +19,50 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     
     config: {
         defaultSettings: {
-            showCount:  true
+            showCount:  true,
+            showScopeSelector:  true
         }
     },
-                        
+
     launch: function() {
         var me = this;
         this._setupEvents();
-
-        var selector_box = this.down('#selector_box');
-        selector_box.removeAll();
         
-        selector_box.add({
-            xtype:'rallymilestonecombobox',
-            listeners: {
-                scope: this,
-                change: function(cb) {
-                    this._updateData(cb.getRecord());
+        var settings = this.getSettings();
+        
+        if ( settings.showScopeSelector == true || settings.showScopeSelector == "true" ) {
+            this._addSelector();
+            this.subscribe(this,'requestTimebox',this._publishTimebox,this);
+        } else {
+            this.logger.log('burnup, subscribing');
+            this.subscribe(this, 'timeboxChanged', this._updateData, this);
+            this.logger.log('requesting current timebox');
+            this.publish('requestTimebox', this);
+        }
+    },
+
+    _addSelector: function() {
+        var selector_box = this.down('#selector_box');
+            selector_box.removeAll();
+            
+            selector_box.add({
+                xtype:'rallymilestonecombobox',
+                listeners: {
+                    scope: this,
+                    change: function(cb) {
+                        this._publishTimebox();
+                        this._updateData(cb.getRecord());
+                    }
                 }
-            }
-        });
+            });
+    },
+
+    _publishTimebox: function() {
+        this.logger.log("Publish timebox");
+        var cb = this.down('rallymilestonecombobox');
+        if ( cb ) {
+            this.publish('timeboxChanged', cb.getRecord());
+        }
     },
     
     _setupEvents: function () {
@@ -217,6 +242,14 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     
     getSettingsFields: function() {
         return [
+            {
+                name: 'showScopeSelector',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+            },
             {
                 name: 'showCount',
                 xtype: 'rallycheckboxfield',
