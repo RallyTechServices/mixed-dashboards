@@ -3,11 +3,11 @@
 <head>
     <title>TS Non-Artifact Board</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Jan 20 2016 13:33:01 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Jan 29 2016 16:49:48 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Jan 20 2016 13:33:01 GMT-0800 (PST)";
-        var CHECKSUM = 28115584053;
+        var APP_BUILD_DATE = "Fri Jan 29 2016 16:49:48 GMT-0500 (EST)";
+        var CHECKSUM = 28060839324;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -959,51 +959,52 @@ Ext.define("TSNonArtifactBoard", {
             stateful: false,
             toggleState: 'board',
             cardBoardConfig: cardboardConfig,
-//            plugins: [
-//                {
-//                    ptype: 'rallygridboardaddnew',
-//                    addNewControlConfig: {
-//                        listeners: {
-//                            beforecreate: this._onBeforeCreate,
-//                            beforeeditorshow: this._onBeforeEditorShow,
-//                            scope: this
-//                        },
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-add-new')
-//                    }
-//                },
-//                {
-//                    ptype: 'rallygridboardcustomfiltercontrol',
-//                    filterChildren: true,
-//                    filterControlConfig: {
-//                        blackListFields: [],
-//                        whiteListFields: ['Milestones'],
-//                        margin: '3 9 3 30',
-//                        modelNames: modelNames,
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-custom-filter-button')
-//                    },
-//                    showOwnerFilter: true,
-//                    ownerFilterControlConfig: {
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-owner-filter')
-//                    }
-//                },
-//                {
-//                    ptype: 'rallygridboardfieldpicker',
-//                    headerPosition: 'left',
-//                    boardFieldBlackList: blacklist,
-//                    modelNames: modelNames,
-//                    boardFieldDefaults: this.getSetting('cardFields').split(',')
-//                },
-//                {
-//                    ptype: 'rallyboardpolicydisplayable',
-//                    prefKey: 'kanbanAgreementsChecked',
-//                    checkboxConfig: {
-//                        boxLabel: 'Show Agreements'
-//                    }
-//                }
-//            ],
+           plugins: [
+               // {
+               //     ptype: 'rallygridboardaddnew',
+               //     addNewControlConfig: {
+               //         listeners: {
+               //             beforecreate: this._onBeforeCreate,
+               //             beforeeditorshow: this._onBeforeEditorShow,
+               //             scope: this
+               //         },
+               //         stateful: true,
+               //         stateId: context.getScopedStateId('kanban-add-new')
+               //     }
+               // },
+               {
+                   ptype: 'rallygridboardcustomfiltercontrol',
+                   filterChildren: true,
+                   filterControlConfig: {
+                       blackListFields: [],
+                       whiteListFields: ['Milestones'],
+                       margin: '3 9 3 30',
+                       modelNames: modelNames,
+                       stateful: true,
+                       stateId: context.getScopedStateId('kanban-custom-filter-button')
+                   }
+                   // ,
+                   // showOwnerFilter: true,
+                   // ownerFilterControlConfig: {
+                   //     stateful: true,
+                   //     stateId: context.getScopedStateId('kanban-owner-filter')
+                   // }
+               },
+               {
+                   ptype: 'rallygridboardfieldpicker',
+                   headerPosition: 'left',
+                   boardFieldBlackList: blacklist,
+                   modelNames: modelNames,
+                   boardFieldDefaults: this.getSetting('cardFields').split(',')
+               // },
+               // {
+               //     ptype: 'rallyboardpolicydisplayable',
+               //     prefKey: 'kanbanAgreementsChecked',
+               //     checkboxConfig: {
+               //         boxLabel: 'Show Agreements'
+               //     }
+               }
+           ],
             context: context,
             modelNames: modelNames,
             storeConfig: {
