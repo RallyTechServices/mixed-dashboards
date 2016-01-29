@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone CFD with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Jan 27 2016 18:23:39 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Jan 29 2016 11:37:35 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Jan 27 2016 18:23:39 GMT-0800 (PST)";
-        var CHECKSUM = 14049699006;
+        var APP_BUILD_DATE = "Fri Jan 29 2016 11:37:35 GMT-0800 (PST)";
+        var CHECKSUM = 14386500487;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -522,7 +522,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  true
+            showScopeSelector:  false
         }
     },
                         
@@ -833,6 +833,14 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     
     getSettingsFields: function() {
         return [
+            {
+                name: 'showScopeSelector',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+            },
             {
                 name: 'showCount',
                 xtype: 'rallycheckboxfield',

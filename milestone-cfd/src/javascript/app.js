@@ -20,7 +20,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  true
+            showScopeSelector:  false
         }
     },
                         
@@ -331,6 +331,14 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     
     getSettingsFields: function() {
         return [
+            {
+                name: 'showScopeSelector',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+            },
             {
                 name: 'showCount',
                 xtype: 'rallycheckboxfield',
