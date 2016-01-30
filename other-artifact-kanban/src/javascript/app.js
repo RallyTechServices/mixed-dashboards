@@ -64,51 +64,52 @@ Ext.define("TSNonArtifactBoard", {
             stateful: false,
             toggleState: 'board',
             cardBoardConfig: cardboardConfig,
-//            plugins: [
-//                {
-//                    ptype: 'rallygridboardaddnew',
-//                    addNewControlConfig: {
-//                        listeners: {
-//                            beforecreate: this._onBeforeCreate,
-//                            beforeeditorshow: this._onBeforeEditorShow,
-//                            scope: this
-//                        },
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-add-new')
-//                    }
-//                },
-//                {
-//                    ptype: 'rallygridboardcustomfiltercontrol',
-//                    filterChildren: true,
-//                    filterControlConfig: {
-//                        blackListFields: [],
-//                        whiteListFields: ['Milestones'],
-//                        margin: '3 9 3 30',
-//                        modelNames: modelNames,
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-custom-filter-button')
-//                    },
-//                    showOwnerFilter: true,
-//                    ownerFilterControlConfig: {
-//                        stateful: true,
-//                        stateId: context.getScopedStateId('kanban-owner-filter')
-//                    }
-//                },
-//                {
-//                    ptype: 'rallygridboardfieldpicker',
-//                    headerPosition: 'left',
-//                    boardFieldBlackList: blacklist,
-//                    modelNames: modelNames,
-//                    boardFieldDefaults: this.getSetting('cardFields').split(',')
-//                },
-//                {
-//                    ptype: 'rallyboardpolicydisplayable',
-//                    prefKey: 'kanbanAgreementsChecked',
-//                    checkboxConfig: {
-//                        boxLabel: 'Show Agreements'
-//                    }
-//                }
-//            ],
+           plugins: [
+               // {
+               //     ptype: 'rallygridboardaddnew',
+               //     addNewControlConfig: {
+               //         listeners: {
+               //             beforecreate: this._onBeforeCreate,
+               //             beforeeditorshow: this._onBeforeEditorShow,
+               //             scope: this
+               //         },
+               //         stateful: true,
+               //         stateId: context.getScopedStateId('kanban-add-new')
+               //     }
+               // },
+               {
+                   ptype: 'rallygridboardcustomfiltercontrol',
+                   filterChildren: true,
+                   filterControlConfig: {
+                       blackListFields: [],
+                       whiteListFields: ['Milestones'],
+                       margin: '3 9 3 30',
+                       modelNames: modelNames,
+                       stateful: true,
+                       stateId: context.getScopedStateId('kanban-custom-filter-button')
+                   }
+                   // ,
+                   // showOwnerFilter: true,
+                   // ownerFilterControlConfig: {
+                   //     stateful: true,
+                   //     stateId: context.getScopedStateId('kanban-owner-filter')
+                   // }
+               },
+               {
+                   ptype: 'rallygridboardfieldpicker',
+                   headerPosition: 'left',
+                   boardFieldBlackList: blacklist,
+                   modelNames: modelNames,
+                   boardFieldDefaults: this.getSetting('cardFields').split(',')
+               // },
+               // {
+               //     ptype: 'rallyboardpolicydisplayable',
+               //     prefKey: 'kanbanAgreementsChecked',
+               //     checkboxConfig: {
+               //         boxLabel: 'Show Agreements'
+               //     }
+               }
+           ],
             context: context,
             modelNames: modelNames,
             storeConfig: {
