@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone CFD with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jan 29 2016 11:37:35 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Jan 29 2016 20:01:49 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jan 29 2016 11:37:35 GMT-0800 (PST)";
-        var CHECKSUM = 14386500487;
+        var APP_BUILD_DATE = "Fri Jan 29 2016 20:01:49 GMT-0800 (PST)";
+        var CHECKSUM = 14386498867;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>

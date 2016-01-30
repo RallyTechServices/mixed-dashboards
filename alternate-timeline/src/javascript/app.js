@@ -3,21 +3,82 @@ Ext.define("TSAlternateTimeline", {
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
+    layout: 'border', 
+    
     items: [
-        {xtype:'container',itemId:'display_box'}
+        {xtype:'container',itemId:'display_box',layout:'border', region:'center'}
     ],
 
     integrationHeaders : {
         name : "TSAlternateTimeline"
     },
+    
+    config: {
+        defaultSettings: {
+            milestone_display_count: 7
+        }
+    },
                         
     launch: function() {
-        this.down('#display_box').add({
+        
+        var display_box = this.down('#display_box');
+        display_box.removeAll();
+        
+        display_box.add({
+            xtype:'container',
+            region:'west',
+            layout: 'vbox',
+            items: [
+                this._getUpButtonConfig(),
+                { xtype:'container', flex: 1 },
+                this._getDownButtonConfig()
+            ]
+        });
+        
+        display_box.add({
             xtype: 'rallychart',
+            region:'center',
+           
             loadMask: false,
             chartData: this._getChartData(),
             chartConfig: this._getChartConfig()
         });
+    },
+    
+    _getUpButtonConfig: function() {
+        return { 
+            xtype:'rallybutton', 
+            itemId: 'up_button', 
+            text: '<span class="icon-up"> </span>', 
+            disabled: true, 
+            cls: 'secondary small',
+            listeners: {
+                scope: this,
+                click: function() {
+                    if ( this.highchart ) {
+                        this._scrollUp(this.highchart);
+                    }
+                }
+            }
+        };
+    },
+    
+    _getDownButtonConfig: function() {
+        return { 
+            xtype:'rallybutton', 
+            itemId: 'down_button', 
+            text: '<span class="icon-down"> </span>', 
+            disabled: true, 
+            cls: 'secondary small',
+            listeners: {
+                scope: this,
+                click: function() {
+                    if ( this.highchart ) {
+                        this._scrollDown(this.highchart);
+                    }
+                }
+            }
+        };
     },
             
     /**
@@ -46,7 +107,7 @@ Ext.define("TSAlternateTimeline", {
                 },
                 {
                     name: 'Planned',
-                    data: [ [0,10], [5,11], [0,2], [1,7], [4,8], [0,10], [5,11], [0,2], [1,7], [4,8] ],
+                    data: [ [0,10], [5,11], [0,2], [1,7], [4,8],  [0,10], [5,11], [0,2], [1,7], [4,8] ],
                     scrollbar: {
                         enabled: true,
                         barBackgroundColor: 'gray',
@@ -71,10 +132,16 @@ Ext.define("TSAlternateTimeline", {
      * Generate a valid Highcharts configuration object to specify the column chart
      */
     _getChartConfig: function() {
+        var me = this;
         return {
             chart: {
                 inverted: true,
-                type: 'columnrange'
+                type: 'columnrange',
+                events: {
+                    load: function(evt) {
+                        me._setChart(this);
+                    }
+                }
             },
             title: {
                 text: ''
@@ -84,9 +151,11 @@ Ext.define("TSAlternateTimeline", {
             },
             xAxis: {
                 min: 0,
-                max:5
+                id: 'xAxis',
+                max: me.getSetting('milestone_display_count')
             },
             yAxis: {
+                id: 'yAxis',
                 categories: [ 'Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 min: 0,
                     title: {
@@ -134,6 +203,71 @@ Ext.define("TSAlternateTimeline", {
                 }
             }
         };
+    },
+    
+    _setChart: function(chart) {
+        this.highchart = chart;
+        this._enableChartButtons();
+    },
+    
+    _enableChartButtons: function() {
+        var up_button = this.down('#up_button');
+        var down_button = this.down('#down_button');
+        
+        up_button.setDisabled(true);
+        down_button.setDisabled(true);
+        
+        if ( this.highchart ) {
+            var extremes = this._getExtremes(this.highchart,'xAxis');
+            
+            if ( extremes.min > 0 ) {
+                up_button.setDisabled(false);
+            }
+            
+            if ( extremes.max < extremes.dataMax ) {
+                down_button.setDisabled(false);
+            }
+        }
+    },
+    
+    _getExtremes: function(chart, id) {
+        var axis = chart.get(id); // must set the axis' id property
+        return axis.getExtremes();
+    },
+    
+    _setExtremes: function(chart, id, min, max) {
+        var axis = chart.get(id); // must set the axis' id property
+        var extremes = this._getExtremes(chart,id);
+        
+        axis.setExtremes(min,max);
+        this._enableChartButtons();
+    },
+    
+    _scrollUp: function(chart) {
+        var extremes = this._getExtremes(chart,'xAxis');
+        var new_max = extremes.max - 1;
+        var new_min = extremes.min - 1;
+        
+        if ( new_min < 0 ) { new_min = 0; }
+        if ( new_max < new_min + this.getSetting('milestone_display_count') - 1) { 
+            new_max = new_min + this.getSetting('milestone_display_count') - 1;
+        }
+        
+        this._setExtremes(chart,'xAxis',new_min,new_max);
+    },
+    
+    _scrollDown: function(chart) {
+        var extremes = this._getExtremes(chart,'xAxis');
+        var new_max = extremes.max + 1;
+        var new_min = extremes.min + 1;
+        
+        //if ( new_max > extremes.dataMax ) { new_max = extremes.dataMax; }
+        if ( new_min > new_max - this.getSetting('milestone_display_count') + 1 ) { 
+            new_min =  new_max - this.getSetting('milestone_display_count') + 1;
+            if ( new_min < 0 ) { new_min = 0; }
+        }
+        
+        this._setExtremes(chart,'xAxis',new_min,new_max);
     },
       
     _loadWsapiRecords: function(config){
