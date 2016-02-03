@@ -3,11 +3,11 @@
 <head>
     <title>TS Non-Artifact Board</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jan 29 2016 16:49:48 GMT-0500 (EST) -->
+    <!--  Build Date: Wed Feb 03 2016 10:14:59 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jan 29 2016 16:49:48 GMT-0500 (EST)";
-        var CHECKSUM = 28060839324;
+        var APP_BUILD_DATE = "Wed Feb 03 2016 10:14:59 GMT-0500 (EST)";
+        var CHECKSUM = 29913640861;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -176,6 +176,26 @@ Ext.define('Rally.technicalservices.Logger',{
 
 });
 
+Ext.override(Rally.ui.gridboard.GridBoard,{
+    applyCustomFilter: function(filterObj) {
+        var gridOrBoard = this.getGridOrBoard();
+
+        this.currentCustomFilter = filterObj;
+
+        if (gridOrBoard) {
+            if (this.getToggleState() === 'board') {
+                this._applyBoardFilters(gridOrBoard, filterObj);
+            } else {
+                this._applyGridFilters(gridOrBoard, filterObj);
+            }
+        }
+        /**
+         * Call your code here or fire an event from the gridboard.  
+         * If you fire an event from ere, you can put a listener on the gridboard
+         */
+        this.fireEvent('filterschanged', filterObj.filters);
+    } 
+});
 Ext.define('Rally.apps.kanban.Column', {
     extend: 'Rally.ui.cardboard.Column',
     alias: 'widget.kanbancolumn',
@@ -947,6 +967,7 @@ Ext.define("TSNonArtifactBoard", {
         var cardboard_config = this._getGridboardConfig(cardboardConfig);
         this.logger.log('config:', cardboard_config);
         this.gridboard = this.add(cardboard_config);
+        //publish the gridboard
     },
 
     _getGridboardConfig: function(cardboardConfig) {
@@ -959,6 +980,16 @@ Ext.define("TSNonArtifactBoard", {
             stateful: false,
             toggleState: 'board',
             cardBoardConfig: cardboardConfig,
+            listeners: {
+                            scope: this,
+                            filterschanged: function(cb) {
+                                console.log('cb >>>>>>>>>>>',cb);
+                                this.publish('milestones_gc', cb);
+
+                                // this._publishTimebox();
+                                // this._updateData(cb.getRecord());
+                            }
+                        },
            plugins: [
                // {
                //     ptype: 'rallygridboardaddnew',
@@ -982,7 +1013,9 @@ Ext.define("TSNonArtifactBoard", {
                        modelNames: modelNames,
                        stateful: true,
                        stateId: context.getScopedStateId('kanban-custom-filter-button')
+                      
                    }
+
                    // ,
                    // showOwnerFilter: true,
                    // ownerFilterControlConfig: {
@@ -1081,12 +1114,13 @@ Ext.define("TSNonArtifactBoard", {
             attribute: this.getSetting('groupByField'),
             margin: '10px',
             context: this.getContext(),
-//            listeners: {
-//                beforecarddroppedsave: this._onBeforeCardSaved,
-//                load: this._onBoardLoad,
-//                cardupdated: this._publishContentUpdatedNoDashboardLayout,
-//                scope: this
-//            },
+            listeners: {
+               // beforecarddroppedsave: this._onBeforeCardSaved,
+               // load: this._onBoardLoad,
+               // cardupdated: this._publishContentUpdatedNoDashboardLayout,
+               filtercomplete: this._onFilter,
+               scope: this
+            },
             columnConfig: {
                 xtype: 'rallycardboardcolumn',
                 enableWipLimit: true
@@ -1112,7 +1146,12 @@ Ext.define("TSNonArtifactBoard", {
         return config;
     },
 
+    _onFilter: function() {
+        console.log('inside _onFilter >>>>>>>>');
+    },
+
     _getFilters: function() {
+        console.log('inside _getFilters >>>>>>>>');
         var filters = [];
         if(this.getSetting('query')) {
             filters.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));

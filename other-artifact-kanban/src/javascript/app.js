@@ -52,6 +52,7 @@ Ext.define("TSNonArtifactBoard", {
         var cardboard_config = this._getGridboardConfig(cardboardConfig);
         this.logger.log('config:', cardboard_config);
         this.gridboard = this.add(cardboard_config);
+        //publish the gridboard
     },
 
     _getGridboardConfig: function(cardboardConfig) {
@@ -64,6 +65,16 @@ Ext.define("TSNonArtifactBoard", {
             stateful: false,
             toggleState: 'board',
             cardBoardConfig: cardboardConfig,
+            listeners: {
+                            scope: this,
+                            filterschanged: function(cb) {
+                                console.log('cb >>>>>>>>>>>',cb);
+                                this.publish('milestones_gc', cb);
+
+                                // this._publishTimebox();
+                                // this._updateData(cb.getRecord());
+                            }
+                        },
            plugins: [
                // {
                //     ptype: 'rallygridboardaddnew',
@@ -87,7 +98,9 @@ Ext.define("TSNonArtifactBoard", {
                        modelNames: modelNames,
                        stateful: true,
                        stateId: context.getScopedStateId('kanban-custom-filter-button')
+                      
                    }
+
                    // ,
                    // showOwnerFilter: true,
                    // ownerFilterControlConfig: {
@@ -186,12 +199,11 @@ Ext.define("TSNonArtifactBoard", {
             attribute: this.getSetting('groupByField'),
             margin: '10px',
             context: this.getContext(),
-//            listeners: {
-//                beforecarddroppedsave: this._onBeforeCardSaved,
-//                load: this._onBoardLoad,
-//                cardupdated: this._publishContentUpdatedNoDashboardLayout,
-//                scope: this
-//            },
+            // listeners: {
+            //    // beforecarddroppedsave: this._onBeforeCardSaved,
+            //    // load: this._onBoardLoad,
+            //    // cardupdated: this._publishContentUpdatedNoDashboardLayout,
+            // },
             columnConfig: {
                 xtype: 'rallycardboardcolumn',
                 enableWipLimit: true
@@ -216,6 +228,7 @@ Ext.define("TSNonArtifactBoard", {
         }
         return config;
     },
+
 
     _getFilters: function() {
         var filters = [];
