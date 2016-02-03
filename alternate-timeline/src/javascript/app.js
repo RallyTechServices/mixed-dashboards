@@ -43,8 +43,14 @@ Ext.define("TSAlternateTimeline", {
             chartData: this._getChartData(),
             chartConfig: this._getChartConfig()
         });
+        this.subscribe(this,'milestones_gc',this._getPublishedFilter,this);
+
     },
     
+    _getPublishedFilter: function(ms_filter){
+        console.log('Inside _getPublishedFilter',ms_filter);
+    },
+
     _getUpButtonConfig: function() {
         return { 
             xtype:'rallybutton', 
