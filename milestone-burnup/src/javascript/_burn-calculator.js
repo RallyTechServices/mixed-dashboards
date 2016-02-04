@@ -32,7 +32,7 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
          * * Today must be on the chart
          */
         showTrend: true,
-        
+
         plotLines: []
     },
 
@@ -107,9 +107,9 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
     },
 
     runCalculation: function (snapshots, snapshotsToSubtract) {
-        
         var highcharts_data = this.callParent(arguments);
-                
+        console.log('inside runCalculation >>>',highcharts_data)
+     
         if ( this.hideBarsAfterToday ) {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
@@ -223,9 +223,10 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
     },
     
     _addTrend: function(data) {
-        if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
-            return data;
-        }
+        console.log('inside _addTrend >>', data)
+        // if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
+        //     return data;
+        // }
 
         var accepted_series = [];
         var scope_series = [];
@@ -274,7 +275,8 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
         
         //this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
-        
+        console.log('exit _addTrend >>', data)
+
         return data;
     },
     
