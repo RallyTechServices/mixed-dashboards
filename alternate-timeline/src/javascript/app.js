@@ -15,15 +15,141 @@ Ext.define("TSAlternateTimeline", {
     
     config: {
         defaultSettings: {
-            milestone_display_count: 7
+            milestone_display_count: 7,
+            planned_start_field: 'c_PlannedStartDate',
+            actual_start_field : 'c_ActualStartDate',
+            actual_end_field   : 'c_ActualEndDate'
         }
     },
                         
     launch: function() {
-        
-        var display_box = this.down('#display_box');
+        this._updateData();
+    },
+    
+    _updateData: function() {
+        var display_box = this.down('#display_box'),
+            me = this;
+            
         display_box.removeAll();
         
+        var config = {
+            model: 'Milestone',
+            fetch: ['FormattedID','Name','TargetDate', this.getSetting('planned_start_field'),
+                this.getSetting('actual_start_field'), this.getSetting('actual_end_field')],
+            filters: [{property:'TargetDate', operator: '>', value:'2015-12-31'}],
+            sorters: [{property:'TargetDate',direction:'ASC'}]
+        };
+        
+        Deft.Chain.pipeline([
+            function() { return this._loadWsapiRecords(config) },
+            this._processMilestones
+        ],this).then({
+            success: function(data) {
+                console.log(data);
+                me._addTimeline(display_box);
+            },
+            failure: function(msg) {
+                Ext.Msg.alert("Problem loading data", msg);
+            }
+        });
+    },
+    
+    _processMilestones: function(milestones) {
+        this.logger.log('_processMilestones',milestones);
+        
+        this.dateCategories = this._getDateCategories();
+        this.milestoneCategories = Ext.Array.map(milestones, function(milestone) { 
+            return Ext.String.format( '{0}: {1}',
+                milestone.get('FormattedID'),
+                milestone.get('Name')
+            );
+        });
+                
+        var planned_series = { 
+            name: 'Planned',
+            data: this._getPlannedRangesFromMilestones(milestones,this.dateCategories)
+        };
+        
+        var actual_series = {
+            name: 'Actual',
+            data: this._getActualRangesFromMilestones(milestones, this.dateCategories)
+        };
+        
+        this.milestoneSeries = [
+            actual_series,
+            planned_series
+        ];
+    },
+    
+    _getDateCategories: function() {
+        var start_date = new Date(2016,0,1);
+        
+        return Ext.Array.map( _.range(0,365), function(index) {
+            var date = Rally.util.DateTime.add(start_date, 'day', index);
+            return Ext.Date.format(date,'z');
+        },this);
+    },
+   
+    
+    _getCategoryFromDate: function(date) {
+        return Ext.Date.format(date, 'z');
+    },
+    
+    _getPlannedRangesFromMilestones: function(milestones, categories) {
+        var planned_start_field = this.getSetting('planned_start_field');
+        
+        return Ext.Array.map(milestones, function(milestone) {
+            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(planned_start_field)));
+            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get('TargetDate')));
+            
+            if ( start_index < 0 ) { start_index = 0; }
+            if ( end_index > 365 ) { end_index = 365; }
+            return [ start_index, end_index ];
+        },this);
+    },
+    
+    _getActualRangesFromMilestones: function(milestones, categories) {
+        var actual_start_field = this.getSetting('actual_start_field');
+        var actual_end_field = this.getSetting('actual_end_field');
+        
+        return Ext.Array.map(milestones, function(milestone) {
+            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actual_start_field)));
+            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actual_end_field)));
+            
+            if ( start_index < 0 ) { 
+                if ( Ext.isEmpty(milestone.get(actual_start_field) ) ) {
+                    start_index = null;
+                } else {
+                    start_index = 0;
+                }
+            }
+            if ( end_index > 365 ) { end_index = 365; }
+            
+            if ( Ext.isEmpty(milestone.get(actual_end_field)) ) {
+                end_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(new Date()));
+            }
+            return [ start_index, end_index ];
+        },this);
+    },
+    
+    _getDateRangeFromMilestones: function(milestones) {
+        var start_date_field = this.getSetting('planned_start_field');
+        
+        var start_dates = Ext.Array.map(milestones, function(milestone) {
+            return milestone.get(start_date_field) || new Date();
+        });
+        
+        var end_dates = Ext.Array.map(milestones, function(milestone) {
+            return milestone.get('TargetDate') || new Date();
+        });
+        
+        var dates = Ext.Array.merge(start_dates,end_dates);
+        
+        
+        return [ Ext.Array.min(dates), Ext.Array.max(dates)];
+    },
+    
+    _addTimeline: function(display_box) {
         display_box.add({
             xtype:'container',
             region:'west',
@@ -34,23 +160,18 @@ Ext.define("TSAlternateTimeline", {
                 this._getDownButtonConfig()
             ]
         });
-        
+                
         display_box.add({
             xtype: 'rallychart',
             region:'center',
            
             loadMask: false,
             chartData: this._getChartData(),
+            chartColors: Rally.techservices.Colors.getTimelineColors(),
             chartConfig: this._getChartConfig()
         });
-        this.subscribe(this,'milestones_gc',this._getPublishedFilter,this);
-
     },
     
-    _getPublishedFilter: function(ms_filter){
-        console.log('Inside _getPublishedFilter',ms_filter);
-    },
-
     _getUpButtonConfig: function() {
         return { 
             xtype:'rallybutton', 
@@ -92,48 +213,37 @@ Ext.define("TSAlternateTimeline", {
      */
     _getChartData: function() {
         return {
-            categories: [
-                'M1: a milestone',
-                'M2: a milestone',
-                'M3: a milestone',
-                'M4: a milestone',
-                'M5: a milestone',
-                'M6: a milestone',
-                'M7: a milestone',
-                'M8: a milestone',
-                'M9: a milestone',
-                'M10: a milestone',
-                'M11: a milestone'
-            ],
+            categories: this.milestoneCategories,
             min: 5,
-            series: [
-                {
-                    name: 'Actual',
-                    data: [ null, [6,8], [2,3], [3,8], [5,8] ]
-                },
-                {
-                    name: 'Planned',
-                    data: [ [0,10], [5,11], [0,2], [1,7], [4,8],  [0,10], [5,11], [0,2], [1,7], [4,8] ],
-                    scrollbar: {
-                        enabled: true,
-                        barBackgroundColor: 'gray',
-                        barBorderRadius: 7,
-                        barBorderWidth: 0,
-                        buttonBackgroundColor: 'gray',
-                        buttonBorderWidth: 0,
-                        buttonArrowColor: 'yellow',
-                        buttonBorderRadius: 7,
-                        rifleColor: 'yellow',
-                        trackBackgroundColor: 'white',
-                        trackBorderWidth: 1,
-                        trackBorderColor: 'silver',
-                        trackBorderRadius: 7
-                    }
-                }
-            ]
+            series: this.milestoneSeries
         };
     },
 
+    _getPlotlines: function() {
+        var me = this;
+        
+        var start_date = new Date(2016,0,1);
+        var month_lines = Ext.Array.map( _.range(0,12), function(index) {
+            var date = Rally.util.DateTime.add(start_date, 'month', index);
+            var value = Ext.Date.format(date,'z');
+            
+            return {
+                color: '#ccc',
+                width: 1,
+                value: value
+            }
+        },this);
+        
+        var today_line = {
+            color: '#c00',
+            width: 1,
+            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date()))
+        };
+        
+        return Ext.Array.merge( month_lines, today_line );
+    },
+    
+    
     /**
      * Generate a valid Highcharts configuration object to specify the column chart
      */
@@ -162,12 +272,22 @@ Ext.define("TSAlternateTimeline", {
             },
             yAxis: {
                 id: 'yAxis',
-                categories: [ 'Jan', 'Feb', 'Mar', 'April', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                tickInterval: 365,
+                categories: this.dateCategories,
                 min: 0,
-                    title: {
+                max: 365,
+                title: {
                     text: ' '
+                },
+                plotLines: this._getPlotlines(),
+                labels: {
+                    align: 'right',
+                    formatter: function() {
+                        return "";
+                    }
                 }
             },
+
             tooltip: {
                 headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
                     pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
@@ -180,32 +300,17 @@ Ext.define("TSAlternateTimeline", {
             
             legend: { enabled: false },
             
-            scrollbar: {
-                enabled: true,
-                barBackgroundColor: 'gray',
-                barBorderRadius: 7,
-                barBorderWidth: 0,
-                buttonBackgroundColor: 'gray',
-                buttonBorderWidth: 0,
-                buttonArrowColor: 'yellow',
-                buttonBorderRadius: 7,
-                rifleColor: 'yellow',
-                trackBackgroundColor: 'white',
-                trackBorderWidth: 1,
-                trackBorderColor: 'silver',
-                trackBorderRadius: 7
-            },
-            
             plotOptions: {
-                column: {
-                    pointPadding: 0.2,
-                        borderWidth: 0
-                },
+
                 columnrange: {
                     dataLabels: {
                         enabled: false,
                         formatter: function() { return this.y + "!"; }
                     }
+                },
+                
+                series: {
+                    pointPadding: 0
                 }
             }
         };

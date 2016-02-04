@@ -20,7 +20,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  true
+            showScopeSelector:  true,
+            startDateField: 'c_PlannedStartDate'
         }
     },
 

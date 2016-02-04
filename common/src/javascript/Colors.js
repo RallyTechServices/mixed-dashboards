@@ -19,6 +19,12 @@ Ext.define("Rally.techservices.Colors", {
             this.grey4, this.orange, this.gold, this.yellow, this.lime, this.green_dk, this.blue_link, this.blue, this.purple, this.pink
         ];
     },
+    
+    getTimelineColors: function() {
+        return [
+            this.grey4, this.blue
+        ];
+    },
 
     getBurnLineColor : function (){ return this.blue; },
     getBurnColumnColor : function() { return this.lime; }
