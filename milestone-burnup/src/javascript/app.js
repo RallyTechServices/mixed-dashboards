@@ -21,7 +21,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
         defaultSettings: {
             showCount:  true,
             showScopeSelector:  true,
-            chartBeginField: 'c_PlannedStartDate'
+            startDateField: 'c_PlannedStartDate'
         }
     },
 
