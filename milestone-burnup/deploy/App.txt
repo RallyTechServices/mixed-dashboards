@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Burnup with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Wed Feb 03 2016 16:44:00 GMT-0500 (EST) -->
+    <!--  Build Date: Thu Feb 04 2016 11:53:31 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Feb 03 2016 16:44:00 GMT-0500 (EST)";
-        var CHECKSUM = 16303178210;
+        var APP_BUILD_DATE = "Thu Feb 04 2016 11:53:31 GMT-0500 (EST)";
+        var CHECKSUM = 17390183676;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -321,7 +321,7 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
          * * Today must be on the chart
          */
         showTrend: true,
-        
+
         plotLines: []
     },
 
@@ -396,9 +396,9 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
     },
 
     runCalculation: function (snapshots, snapshotsToSubtract) {
-        
         var highcharts_data = this.callParent(arguments);
-                
+        console.log('inside runCalculation >>>',highcharts_data)
+     
         if ( this.hideBarsAfterToday ) {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
@@ -512,9 +512,10 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
     },
     
     _addTrend: function(data) {
-        if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
-            return data;
-        }
+        console.log('inside _addTrend >>', data)
+        // if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
+        //     return data;
+        // }
 
         var accepted_series = [];
         var scope_series = [];
@@ -563,7 +564,8 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
         
         //this.PI.ProjectedEndDate = this.trend_date;
         data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
-        
+        console.log('exit _addTrend >>', data)
+
         return data;
     },
     
@@ -668,8 +670,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
         defaultSettings: {
             showCount:  true,
             showScopeSelector:  true,
-            chartBeginField: 'c_PlannedStartDate'
-
+            startDateField: 'c_PlannedStartDate'
         }
     },
 
@@ -746,7 +747,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                     'Milestones': me._getMilestoneObjectID(),
                     '_TypeHierarchy': 'PortfolioItem'
                 },
-                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal','PlannedStartDate'],
+                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
                 sort: {
                     "_ValidFrom": 1
                 }
@@ -891,6 +892,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     },
     
     getSettingsFields: function() {
+        var me = this;
+
         return [
             {
                 name: 'showScopeSelector',
@@ -921,15 +924,38 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
             model: 'Milestone',
             listeners: {
                 //TODO filterout date fields
-                // ready: function(field_box) {
-                //     me._filterOutExceptStrings(field_box.getStore());
-                // }
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
             },
             readyEvent: 'ready'
         }
         ];
     },
     
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        this.logger.log('_filterOutExceptChoices');
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if (  attribute_type == "BOOLEAN" ) {
+                    return false;
+                }
+                if ( attribute_type == "DATE") {
+                    if ( !field.get('fieldDefinition').attributeDefinition.Constrained ) {
+                        return true;
+                    }
+                }
+                return false;
+            } 
+        }]);
+    },
     getOptions: function() {
         return [
             {
@@ -956,7 +982,6 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
         this.launch();
     }
 });
-
             
                Rally.launchApp('TSMilestoneBurnupWithCommonSelector', {
                    name: 'TS Milestone Burnup with Common Selector'

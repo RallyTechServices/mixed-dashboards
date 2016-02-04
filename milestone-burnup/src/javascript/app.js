@@ -98,7 +98,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                     'Milestones': me._getMilestoneObjectID(),
                     '_TypeHierarchy': 'PortfolioItem'
                 },
-                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal','c_PlannedStartDate'],
+                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
                 sort: {
                     "_ValidFrom": 1
                 }
@@ -243,6 +243,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     },
     
     getSettingsFields: function() {
+        var me = this;
+
         return [
             {
                 name: 'showScopeSelector',
@@ -273,15 +275,38 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
             model: 'Milestone',
             listeners: {
                 //TODO filterout date fields
-                // ready: function(field_box) {
-                //     me._filterOutExceptStrings(field_box.getStore());
-                // }
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
             },
             readyEvent: 'ready'
         }
         ];
     },
     
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        this.logger.log('_filterOutExceptChoices');
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if (  attribute_type == "BOOLEAN" ) {
+                    return false;
+                }
+                if ( attribute_type == "DATE") {
+                    if ( !field.get('fieldDefinition').attributeDefinition.Constrained ) {
+                        return true;
+                    }
+                }
+                return false;
+            } 
+        }]);
+    },
     getOptions: function() {
         return [
             {
