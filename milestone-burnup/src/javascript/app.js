@@ -20,7 +20,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  true
+            showScopeSelector:  true,
+            chartBeginField: 'c_PlannedStartDate'
         }
     },
 
@@ -97,7 +98,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                     'Milestones': me._getMilestoneObjectID(),
                     '_TypeHierarchy': 'PortfolioItem'
                 },
-                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
+                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal','c_PlannedStartDate'],
                 sort: {
                     "_ValidFrom": 1
                 }
@@ -111,6 +112,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                 showTrend: true,
                 chartAggregationType: me.getSetting('showCount') ? "storycount" : "storypoints",
                 milestone: me.milestone.getData(),
+                startDate: me.milestone.get(me.getSetting('chartBeginField')),
                 endDate: me.milestone.get('TargetDate')
             },
             
@@ -257,7 +259,26 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                 fieldLabel: '',
                 margin: '0 0 25 200',
                 boxLabel: 'Show by Count<br/><span style="color:#999999;"><i>Tick to use story count.  Otherwise, uses story points.</i></span>'
-            }
+            },
+            {
+            name: 'chartBeginField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart Begin Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                // ready: function(field_box) {
+                //     me._filterOutExceptStrings(field_box.getStore());
+                // }
+            },
+            readyEvent: 'ready'
+        }
         ];
     },
     
