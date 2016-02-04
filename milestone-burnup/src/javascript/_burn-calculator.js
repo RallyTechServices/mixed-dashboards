@@ -31,7 +31,7 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
          * * There must not be an actual end date
          * * Today must be on the chart
          */
-        showTrend: false,
+        showTrend: true,
         
         plotLines: []
     },
