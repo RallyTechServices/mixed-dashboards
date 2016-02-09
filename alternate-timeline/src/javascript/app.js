@@ -23,6 +23,7 @@ Ext.define("TSAlternateTimeline", {
     },
                         
     launch: function() {
+        this.chartStartDate = new Date(2016,0,1);
         this._updateData();
     },
     
@@ -45,7 +46,6 @@ Ext.define("TSAlternateTimeline", {
             this._processMilestones
         ],this).then({
             success: function(data) {
-                console.log(data);
                 me._addTimeline(display_box);
             },
             failure: function(msg) {
@@ -82,7 +82,7 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getDateCategories: function() {
-        var start_date = new Date(2016,0,1);
+        var start_date = this.chartStartDate;
         
         return Ext.Array.map( _.range(0,365), function(index) {
             var date = Rally.util.DateTime.add(start_date, 'day', index);
@@ -219,10 +219,38 @@ Ext.define("TSAlternateTimeline", {
         };
     },
 
-    _getPlotlines: function() {
+    _getPlotBands: function() {
+        var me = this;
+        var start_date = me.chartStartDate;
+        var bands = Ext.Array.map( _.range(0,12), function(index) {
+            var band_start_date = Rally.util.DateTime.add(start_date, 'month', index);
+            var band_end_date = Rally.util.DateTime.add(band_start_date, 'month', 1);
+            
+            var value = Ext.Date.format(band_start_date,'M');
+            
+            var to = Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(band_end_date)) - 1;
+            if ( to < 0 ) { to = 364; }
+            
+            return {
+                color: '#eee',
+                from: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(band_start_date)) +1,
+                to: to,
+                label: {
+                    text: value,
+                    align: 'center'
+                }
+            }
+        },this);
+        
+        console.log(bands);
+        
+        return bands;
+    },
+    
+    _getPlotLines: function() {
         var me = this;
         
-        var start_date = new Date(2016,0,1);
+        var start_date = me.chartStartDate;
         var month_lines = Ext.Array.map( _.range(0,12), function(index) {
             var date = Rally.util.DateTime.add(start_date, 'month', index);
             var value = Ext.Date.format(date,'z');
@@ -272,14 +300,15 @@ Ext.define("TSAlternateTimeline", {
             },
             yAxis: {
                 id: 'yAxis',
-                tickInterval: 365,
+                tickInterval: 366,
                 categories: this.dateCategories,
                 min: 0,
-                max: 365,
+                max: 366,
                 title: {
                     text: ' '
                 },
-                plotLines: this._getPlotlines(),
+                plotBands: this._getPlotBands(),
+                plotLines: this._getPlotLines(),
                 labels: {
                     align: 'right',
                     formatter: function() {
