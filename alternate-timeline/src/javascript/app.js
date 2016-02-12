@@ -12,13 +12,15 @@ Ext.define("TSAlternateTimeline", {
     integrationHeaders : {
         name : "TSAlternateTimeline"
     },
-    
+
     config: {
         defaultSettings: {
             milestone_display_count: 7,
-            planned_start_field: 'c_PlannedStartDate',
-            actual_start_field : 'c_ActualStartDate',
-            actual_end_field   : 'c_ActualEndDate'
+            showScopeSelector:  true,
+            plannedEndField  : 'c_PlannedEndDate',
+            plannedStartField: 'c_PlannedStartDate',
+            actualStartField : 'c_ActualStartDate',
+            actualEndField   : 'c_ActualEndDate'
         }
     },
                         
@@ -35,10 +37,11 @@ Ext.define("TSAlternateTimeline", {
         
         var config = {
             model: 'Milestone',
-            fetch: ['FormattedID','Name','TargetDate', this.getSetting('planned_start_field'),
-                this.getSetting('actual_start_field'), this.getSetting('actual_end_field')],
-            filters: [{property:'TargetDate', operator: '>', value:'2015-12-31'}],
-            sorters: [{property:'TargetDate',direction:'ASC'}]
+            fetch: ['FormattedID','Name','TargetDate', 
+                this.getSetting('plannedEndField'), this.getSetting('plannedStartField'),
+                this.getSetting('actualStartField'), this.getSetting('actualEndField')],
+            filters: [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}],
+            sorters: [{property:this.getSetting('plannedEndField'),direction:'ASC'}]
         };
         
         Deft.Chain.pipeline([
@@ -96,11 +99,12 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getPlannedRangesFromMilestones: function(milestones, categories) {
-        var planned_start_field = this.getSetting('planned_start_field');
+        var plannedStartField = this.getSetting('plannedStartField');
+        var plannedEndField   = this.getSetting('plannedEndField');
         
         return Ext.Array.map(milestones, function(milestone) {
-            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(planned_start_field)));
-            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get('TargetDate')));
+            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(plannedStartField)));
+            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(plannedEndField)));
             
             if ( start_index < 0 ) { start_index = 0; }
             if ( end_index > 365 ) { end_index = 365; }
@@ -109,15 +113,15 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getActualRangesFromMilestones: function(milestones, categories) {
-        var actual_start_field = this.getSetting('actual_start_field');
-        var actual_end_field = this.getSetting('actual_end_field');
+        var actualStartField = this.getSetting('actualStartField');
+        var actualEndField = this.getSetting('actualEndField');
         
         return Ext.Array.map(milestones, function(milestone) {
-            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actual_start_field)));
-            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actual_end_field)));
+            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actualStartField)));
+            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actualEndField)));
             
             if ( start_index < 0 ) { 
-                if ( Ext.isEmpty(milestone.get(actual_start_field) ) ) {
+                if ( Ext.isEmpty(milestone.get(actualStartField) ) ) {
                     start_index = null;
                 } else {
                     start_index = 0;
@@ -125,7 +129,7 @@ Ext.define("TSAlternateTimeline", {
             }
             if ( end_index > 365 ) { end_index = 365; }
             
-            if ( Ext.isEmpty(milestone.get(actual_end_field)) ) {
+            if ( Ext.isEmpty(milestone.get(actualEndField)) ) {
                 end_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(new Date()));
             }
             return [ start_index, end_index ];
@@ -133,18 +137,18 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getDateRangeFromMilestones: function(milestones) {
-        var start_date_field = this.getSetting('planned_start_field');
+        var start_date_field = this.getSetting('plannedStartField');
+        var end_date_field = this.getSetting('plannedEndField');
         
         var start_dates = Ext.Array.map(milestones, function(milestone) {
             return milestone.get(start_date_field) || new Date();
         });
         
         var end_dates = Ext.Array.map(milestones, function(milestone) {
-            return milestone.get('TargetDate') || new Date();
+            return milestone.get(end_date_field) || new Date();
         });
         
         var dates = Ext.Array.merge(start_dates,end_dates);
-        
         
         return [ Ext.Array.min(dates), Ext.Array.max(dates)];
     },
@@ -458,6 +462,109 @@ Ext.define("TSAlternateTimeline", {
             store: store,
             columnCfgs: field_names
         });
+    },
+    
+    getSettingsFields: function() {
+        var me = this;
+
+        return [{
+            name: 'showScopeSelector',
+            xtype: 'rallycheckboxfield',
+            boxLabelAlign: 'after',
+            fieldLabel: '',
+            margin: 10,
+            boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+        },
+        {
+            name: 'plannedStartField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Planned Start Field',
+            labelWidth: 125,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin: 10,
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
+            },
+            readyEvent: 'ready'
+        },
+        {
+            name: 'plannedEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Planned End Field',
+            labelWidth: 125,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin: 10,
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
+            },
+            readyEvent: 'ready'
+        },
+        {
+            name: 'actualStartField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Actual Start Field',
+            labelWidth: 125,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin: 10,
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
+            },
+            readyEvent: 'ready'
+        },
+        {
+            name: 'actualEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Actual End Field',
+            labelWidth: 125,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin: 10,
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                ready: function(field_box) {
+                    me._filterOutExceptDates(field_box.getStore());
+                }
+            },
+            readyEvent: 'ready'
+        }];
+    },
+    
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if ( attribute_type == "DATE") {
+                        return true;
+                }
+                return false;
+            } 
+        }]);
     },
     
     getOptions: function() {

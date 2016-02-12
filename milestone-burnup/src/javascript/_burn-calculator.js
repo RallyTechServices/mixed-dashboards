@@ -32,7 +32,8 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
          * * Today must be on the chart
          */
         showTrend: true,
-
+        trendColor: null,
+        
         plotLines: []
     },
 
@@ -309,6 +310,7 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
             }
         }
         data.series.push({
+            color: this.trendColor || Rally.techservices.Colors.getTrendLineColor() || 'black',
             dashStyle: 'Solid',
             data: trend_data,
             name: 'Trend',

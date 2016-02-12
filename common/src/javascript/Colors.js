@@ -9,10 +9,11 @@ Ext.define("Rally.techservices.Colors", {
     lime: "#8DC63F",  // $lime
     green_dk: "#1E7C00",  // $green_dk
     blue_link: "#337EC6",  // $blue_link
-    blue: "#005EB8",  // $blue
+    blue: "#7FAEDB",  // $blue
     purple : "#7832A5",  // $purple,
     pink : "#DA1884",   // $pink,
     grey7 : "#666",
+    black: '#000',
 
     getCumulativeFlowColors : function() {
         return [
@@ -27,5 +28,8 @@ Ext.define("Rally.techservices.Colors", {
     },
 
     getBurnLineColor : function (){ return this.blue; },
+    
+    getTrendLineColor : function (){ return this.black; },
+    
     getBurnColumnColor : function() { return this.lime; }
 });
