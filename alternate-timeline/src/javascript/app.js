@@ -30,7 +30,6 @@ Ext.define("TSAlternateTimeline", {
     },
                         
     launch: function() {
-        this.chartStartDate = new Date(2016,0,1);
         var show_filter = this.getSetting('showScopeSelector');
         var selector_box = this.down('#selector_box');
         selector_box.removeAll();
@@ -77,7 +76,11 @@ Ext.define("TSAlternateTimeline", {
     _getFilters: function() {
         this.logger.log('_getFilters:', this.filter);
         if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
-            return [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}];
+            if ( Ext.isEmpty(this.chartStartDate) ) {
+                return [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}];
+            } else {
+                return [{property:this.getSetting('plannedEndField'), operator: '>=', value:Rally.util.DateTime.toIsoString(this.chartStartDate)}];
+            }
         }
         
         return this.filter;
@@ -86,21 +89,13 @@ Ext.define("TSAlternateTimeline", {
     _updateData: function() {
         var display_box = this.down('#display_box'),
             me = this;
+
+        this.chartStartDate = new Date(2015,10,1);
             
         display_box.removeAll();
         
-        
-        var config = {
-            model: 'Milestone',
-            fetch: ['FormattedID','Name','TargetDate', 
-                this.getSetting('plannedEndField'), this.getSetting('plannedStartField'),
-                this.getSetting('actualStartField'), this.getSetting('actualEndField')],
-            filters: this._getFilters(),
-            sorters: [{property:this.getSetting('plannedEndField'),direction:'ASC'}]
-        };
-        
         Deft.Chain.pipeline([
-            function() { return this._loadWsapiRecords(config) },
+            this._loadMilestones,
             this._processMilestones
         ],this).then({
             success: function(data) {
@@ -112,10 +107,27 @@ Ext.define("TSAlternateTimeline", {
         });
     },
     
+    _loadMilestones: function() {
+        this.setLoading('Gathering milestones...');
+        
+        var config = {
+            model: 'Milestone',
+            fetch: ['FormattedID','Name','TargetDate', 
+                this.getSetting('plannedEndField'), this.getSetting('plannedStartField'),
+                this.getSetting('actualStartField'), this.getSetting('actualEndField')],
+            filters: this._getFilters(),
+            sorters: [{property:this.getSetting('plannedEndField'),direction:'ASC'}]
+        };
+        
+        return this._loadWsapiRecords(config);
+    },
+    
     _processMilestones: function(milestones) {
+        this.setLoading('Process milestones...');
         this.logger.log('_processMilestones',milestones);
         
         this.dateCategories = this._getDateCategories();
+        
         this.milestoneCategories = Ext.Array.map(milestones, function(milestone) { 
             return Ext.String.format( '{0}: {1}',
                 milestone.get('FormattedID'),
@@ -144,13 +156,25 @@ Ext.define("TSAlternateTimeline", {
         
         return Ext.Array.map( _.range(0,365), function(index) {
             var date = Rally.util.DateTime.add(start_date, 'day', index);
-            return Ext.Date.format(date,'z');
+            return this._getCategoryFromDate(date);
         },this);
     },
    
-    
     _getCategoryFromDate: function(date) {
-        return Ext.Date.format(date, 'z');
+        return Ext.Date.format(date, 'Y-m-d');
+    },
+    
+    _getPositionOnTimeline: function(categories, date) {
+        var category_date = this._getCategoryFromDate(date);
+        console.log(category_date, date);
+        
+        var index = Ext.Array.indexOf(categories,category_date);
+        
+        if ( index > -1 ) { return index; }
+        
+        if (category_date > categories[categories.length-1] ) { return categories.length-1; }
+        
+        return 0;
     },
     
     _getPlannedRangesFromMilestones: function(milestones, categories) {
@@ -158,11 +182,9 @@ Ext.define("TSAlternateTimeline", {
         var plannedEndField   = this.getSetting('plannedEndField');
         
         return Ext.Array.map(milestones, function(milestone) {
-            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(plannedStartField)));
-            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(plannedEndField)));
+            var start_index = this._getPositionOnTimeline(categories, milestone.get(plannedStartField) );
+            var end_index   = this._getPositionOnTimeline(categories, milestone.get(plannedEndField) );
             
-            if ( start_index < 0 ) { start_index = 0; }
-            if ( end_index > 365 ) { end_index = 365; }
             return [ start_index, end_index ];
         },this);
     },
@@ -172,43 +194,24 @@ Ext.define("TSAlternateTimeline", {
         var actualEndField = this.getSetting('actualEndField');
         
         return Ext.Array.map(milestones, function(milestone) {
-            var start_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actualStartField)));
-            var end_index   = Ext.Array.indexOf(categories,this._getCategoryFromDate(milestone.get(actualEndField)));
+            var start_index = this._getPositionOnTimeline(categories,milestone.get(actualStartField));
+            var end_index   = this._getPositionOnTimeline(categories,milestone.get(actualEndField));
             
-            if ( start_index < 0 ) { 
-                if ( Ext.isEmpty(milestone.get(actualStartField) ) ) {
-                    start_index = null;
-                } else {
-                    start_index = 0;
-                }
+            console.log('--', milestone.get('Name'), milestone.get(actualStartField), milestone.get(actualEndField), start_index, end_index);
+            
+            if ( Ext.isEmpty(milestone.get(actualStartField) ) ) {
+                start_index = null;
             }
-            if ( end_index > 365 ) { end_index = 365; }
             
             if ( Ext.isEmpty(milestone.get(actualEndField)) ) {
-                end_index = Ext.Array.indexOf(categories,this._getCategoryFromDate(new Date()));
+                end_index = this._getPositionOnTimeline(categories,new Date());
             }
             return [ start_index, end_index ];
         },this);
     },
     
-    _getDateRangeFromMilestones: function(milestones) {
-        var start_date_field = this.getSetting('plannedStartField');
-        var end_date_field = this.getSetting('plannedEndField');
-        
-        var start_dates = Ext.Array.map(milestones, function(milestone) {
-            return milestone.get(start_date_field) || new Date();
-        });
-        
-        var end_dates = Ext.Array.map(milestones, function(milestone) {
-            return milestone.get(end_date_field) || new Date();
-        });
-        
-        var dates = Ext.Array.merge(start_dates,end_dates);
-        
-        return [ Ext.Array.min(dates), Ext.Array.max(dates)];
-    },
-    
     _addTimeline: function(display_box) {
+        
         display_box.add({
             xtype:'container',
             region:'west',
@@ -229,6 +232,8 @@ Ext.define("TSAlternateTimeline", {
             chartColors: Rally.techservices.Colors.getTimelineColors(),
             chartConfig: this._getChartConfig()
         });
+
+        this.setLoading(false);
     },
     
     _getUpButtonConfig: function() {
@@ -296,7 +301,8 @@ Ext.define("TSAlternateTimeline", {
                 to: to,
                 label: {
                     text: value,
-                    align: 'center'
+                    align: 'center',
+                    y: -2
                 }
             }
         },this);
