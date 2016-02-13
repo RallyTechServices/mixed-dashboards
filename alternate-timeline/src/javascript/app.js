@@ -3,9 +3,14 @@ Ext.define("TSAlternateTimeline", {
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
-    layout: 'border', 
+    layout: 'border',
+    
+    mixins: [
+        'Rally.Messageable'
+    ], 
     
     items: [
+        {xtype:'container', itemId:'selector_box', region: 'north' },
         {xtype:'container',itemId:'display_box',layout:'border', region:'center'}
     ],
 
@@ -26,7 +31,56 @@ Ext.define("TSAlternateTimeline", {
                         
     launch: function() {
         this.chartStartDate = new Date(2016,0,1);
+        var show_filter = this.getSetting('showScopeSelector');
+        var selector_box = this.down('#selector_box');
+        selector_box.removeAll();
+        
+        if ( show_filter == true || show_filter == "true" ) {
+            this._addSelector(selector_box);
+            this.subscribe(this,'requestMilestoneFilter',this._publishFilter,this);
+        } else {
+            this.subscribe(this,'milestoneFilterChanged', this._receiveFilterChange, this);
+            this.publish('requestMilestoneFilter',this);
+        }
+    },
+    
+    _addSelector: function(selector_box) {
+        selector_box.add({
+            xtype: 'rallycustomfilterbutton',
+            modelNames: ['Milestone'],
+            context: this.context,
+            listeners: {
+                customfilter: {
+                    fn: function(button, configuration) {
+                        this.publish('milestoneFilterChanged', configuration.filters);
+                        this.filter = configuration.filters;
+                        this._updateData();
+                    },
+                    single: false,
+                    scope: this
+                }
+            }
+        });
+    },
+    
+    _receiveFilterChange: function(input) {
+        this.logger.log('Received filter change:', input);
+        this.filter = input;
         this._updateData();
+    },
+
+    _publishFilter: function() {
+        var button = this.down('rallycustomfilterbutton');
+        this.publish('milestoneFilterChanged', button && button.getQuery());
+    },
+    
+    _getFilters: function() {
+        this.logger.log('_getFilters:', this.filter);
+        if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
+            return [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}];
+        }
+        
+        return this.filter;
     },
     
     _updateData: function() {
@@ -35,12 +89,13 @@ Ext.define("TSAlternateTimeline", {
             
         display_box.removeAll();
         
+        
         var config = {
             model: 'Milestone',
             fetch: ['FormattedID','Name','TargetDate', 
                 this.getSetting('plannedEndField'), this.getSetting('plannedStartField'),
                 this.getSetting('actualStartField'), this.getSetting('actualEndField')],
-            filters: [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}],
+            filters: this._getFilters(),
             sorters: [{property:this.getSetting('plannedEndField'),direction:'ASC'}]
         };
         
