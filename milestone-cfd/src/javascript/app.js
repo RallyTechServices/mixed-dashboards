@@ -20,7 +20,9 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  false
+            showScopeSelector:  false,
+            startDateField: 'c_PlannedStartDate',
+            endDateField: 'c_PlannedEndDate'
         }
     },
                         
@@ -171,7 +173,8 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                 showTrend: true,
                 chartAggregationType: me.getSetting('showCount') ? "storycount" : "storypoints",
                 milestone: me.milestone.getData(),
-                endDate: me.milestone.get('TargetDate'),
+                startDate: me.milestone.get(me.getSetting('chartBeginField')),
+                endDate: me.milestone.get(me.getSetting('chartEndField')),
                 allowed_values: me.states,
                 value_field: 'PlanEstimate',
                 group_by_field: 'ScheduleState'
@@ -330,6 +333,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     },
     
     getSettingsFields: function() {
+        me = this;
         return [
             {
                 name: 'showScopeSelector',
@@ -346,8 +350,70 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                 fieldLabel: '',
                 margin: '0 0 25 200',
                 boxLabel: 'Show by Count<br/><span style="color:#999999;"><i>Tick to use story count.  Otherwise, uses story points.</i></span>'
+            },
+            {
+            name: 'chartBeginField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart Begin Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
+            },
+            {
+            name: 'chartEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart End Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
             }
         ];
+    },
+    
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        this.logger.log('_filterOutExceptChoices');
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if (  attribute_type == "BOOLEAN" ) {
+                    return false;
+                }
+                if ( attribute_type == "DATE") {
+                    if ( !field.get('fieldDefinition').attributeDefinition.Constrained ) {
+                        return true;
+                    }
+                }
+                return false;
+            } 
+        }]);
     },
     
     getOptions: function() {
