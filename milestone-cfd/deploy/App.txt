@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone CFD with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jan 29 2016 20:01:49 GMT-0800 (PST) -->
+    <!--  Build Date: Thu Feb 18 2016 13:36:00 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jan 29 2016 20:01:49 GMT-0800 (PST)";
-        var CHECKSUM = 14386498867;
+        var APP_BUILD_DATE = "Thu Feb 18 2016 13:36:00 GMT-0500 (EST)";
+        var CHECKSUM = 16797795970;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -26,18 +26,28 @@ Ext.define("Rally.techservices.Colors", {
     lime: "#8DC63F",  // $lime
     green_dk: "#1E7C00",  // $green_dk
     blue_link: "#337EC6",  // $blue_link
-    blue: "#005EB8",  // $blue
+    blue: "#7FAEDB",  // $blue
     purple : "#7832A5",  // $purple,
     pink : "#DA1884",   // $pink,
     grey7 : "#666",
+    black: '#000',
 
     getCumulativeFlowColors : function() {
         return [
             this.grey4, this.orange, this.gold, this.yellow, this.lime, this.green_dk, this.blue_link, this.blue, this.purple, this.pink
         ];
     },
+    
+    getTimelineColors: function() {
+        return [
+            this.grey4, this.blue
+        ];
+    },
 
     getBurnLineColor : function (){ return this.blue; },
+    
+    getTrendLineColor : function (){ return this.black; },
+    
     getBurnColumnColor : function() { return this.lime; }
 });
 
@@ -522,7 +532,9 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  false
+            showScopeSelector:  false,
+            startDateField: 'c_PlannedStartDate',
+            endDateField: 'c_PlannedEndDate'
         }
     },
                         
@@ -673,7 +685,8 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                 showTrend: true,
                 chartAggregationType: me.getSetting('showCount') ? "storycount" : "storypoints",
                 milestone: me.milestone.getData(),
-                endDate: me.milestone.get('TargetDate'),
+                startDate: me.milestone.get(me.getSetting('chartBeginField')),
+                endDate: me.milestone.get(me.getSetting('chartEndField')),
                 allowed_values: me.states,
                 value_field: 'PlanEstimate',
                 group_by_field: 'ScheduleState'
@@ -832,6 +845,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     },
     
     getSettingsFields: function() {
+        me = this;
         return [
             {
                 name: 'showScopeSelector',
@@ -848,8 +862,70 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                 fieldLabel: '',
                 margin: '0 0 25 200',
                 boxLabel: 'Show by Count<br/><span style="color:#999999;"><i>Tick to use story count.  Otherwise, uses story points.</i></span>'
+            },
+            {
+            name: 'chartBeginField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart Begin Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
+            },
+            {
+            name: 'chartEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart End Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
             }
         ];
+    },
+    
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        this.logger.log('_filterOutExceptChoices');
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if (  attribute_type == "BOOLEAN" ) {
+                    return false;
+                }
+                if ( attribute_type == "DATE") {
+                    if ( !field.get('fieldDefinition').attributeDefinition.Constrained ) {
+                        return true;
+                    }
+                }
+                return false;
+            } 
+        }]);
     },
     
     getOptions: function() {

@@ -21,7 +21,8 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
         defaultSettings: {
             showCount:  true,
             showScopeSelector:  true,
-            startDateField: 'c_PlannedStartDate'
+            startDateField: 'c_PlannedStartDate',
+            endDateField: 'c_PlannedEndDate'
         }
     },
 
@@ -46,16 +47,42 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
         var selector_box = this.down('#selector_box');
             selector_box.removeAll();
             
-            selector_box.add({
-                xtype:'rallymilestonecombobox',
-                listeners: {
-                    scope: this,
-                    change: function(cb) {
-                        this._publishTimebox();
-                        this._updateData(cb.getRecord());
-                    }
+        var filters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'Projects',
+            operator: 'contains',
+            value: this.getContext().getProject()._ref
+        });
+
+        filters = filters.or({
+            property: 'TargetProject',
+            value: null
+        });
+
+
+        selector_box.add({
+            xtype:'rallymilestonecombobox',
+            stateful: true,
+            stateId: this.getContext().getScopedStateId('milestone-cb'),
+            width: 200,
+            fieldLabel: 'Milestone',
+            labelAlign: 'right',
+            context: this.getContext(),
+            typeAhead : true,
+            typeAheadDelay: 100,
+            //autoSelect: false,
+            minChars: 1, 
+            storeConfig: {
+                filters: filters,
+                remoteFilter: true
+            },
+            listeners: {
+                scope: this,
+                change: function(cb) {
+                    this._publishTimebox();
+                    this._updateData(cb.getRecord());
                 }
-            });
+            }
+        });
     },
 
     _publishTimebox: function() {
@@ -98,7 +125,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                     'Milestones': me._getMilestoneObjectID(),
                     '_TypeHierarchy': 'PortfolioItem'
                 },
-                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualEndDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
+                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualStartDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
                 sort: {
                     "_ValidFrom": 1
                 }
@@ -113,7 +140,7 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
                 chartAggregationType: me.getSetting('showCount') ? "storycount" : "storypoints",
                 milestone: me.milestone.getData(),
                 startDate: me.milestone.get(me.getSetting('chartBeginField')),
-                endDate: me.milestone.get('TargetDate')
+                endDate: me.milestone.get(me.getSetting('chartEndField'))
             },
             
             chartColors: [],
@@ -275,12 +302,31 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
             model: 'Milestone',
             listeners: {
                 //TODO filterout date fields
-                ready: function(field_box) {
-                    me._filterOutExceptDates(field_box.getStore());
-                }
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
             },
-            readyEvent: 'ready'
-        }
+            {
+            name: 'chartEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart End Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Milestone',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
+            }
         ];
     },
     

@@ -109,8 +109,9 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
 
     runCalculation: function (snapshots, snapshotsToSubtract) {
         var highcharts_data = this.callParent(arguments);
-        console.log('inside runCalculation >>>',highcharts_data)
-     
+        //console.log('inside runCalculation >>>',highcharts_data)
+        var initial_length = highcharts_data.categories.length
+
         if ( this.hideBarsAfterToday ) {
             highcharts_data = this._stripFutureBars(highcharts_data);
         }
@@ -120,7 +121,10 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
         }
         
         this._addPlotlines(highcharts_data);
-                
+        
+        this._stripBarsAfterInitalLengh(highcharts_data,initial_length);    
+        
+
         return highcharts_data;
     },
     
@@ -213,6 +217,67 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
         return data;
     },
     
+    //calculates the midpoint on the trendline and strips rest of the x axis.
+    // http://classroom.synonym.com/calculate-trendline-2709.html
+    //http://cs.selu.edu/~rbyrd/math/slope/
+
+    _stripBarsAfterInitalLengh: function(data,initial_length) {
+        
+        var difference_in_length = data.categories.length - initial_length;
+        
+        data.categories.splice(initial_length,difference_in_length); 
+        var trend_series = [];
+        Ext.Array.each(data.series, function(series) {
+            if ( series.name == "Trend" ) {
+                trend_series = series;
+            }
+        });
+
+        if(trend_series.data){
+            var x1 = this._getIndexOfFirstNonzeroFromArray(trend_series.data); //index of first non zero value on trend series
+            var y1 = trend_series.data[x1]; //first non zero value on trend series
+
+            var x2 = this._getIndexOfLastNonzeroFromArray(trend_series.data) ; //index of last non zero element
+            var y2 = trend_series.data[x2];
+
+            //calculate slope based on the above values
+
+            // var sum_xy = 2 * ((x1 * y1) + (x2 * y2))
+
+            // var sumx_sumy = (x1 + x2) * (y1 + y2);
+
+            // var sum_sq_x = 2 * (x1*x1 + x2*x2);
+
+            // var sum_x_sq = (x1 + x2) * (x1 + x2);
+
+            // var slope = (sum_xy - sumx_sumy) / (sum_sq_x - sum_x_sq);
+
+            var slope = (y2 - y1) / (x2 - x1);
+
+            // calculate y-intercept
+
+            var sum_y = y1 + y2;
+
+            var slope_x = slope * (x1 + x2);
+
+            var y_intercept = (sum_y - slope_x) / 2 
+
+            var new_end_value = slope * initial_length + y_intercept
+
+            Ext.Array.each(data.series, function(series) {
+                if ( series.name == "Trend" ) {
+                    series.data[series.data.length] = new_end_value;
+                }
+                series.data.splice(initial_length,difference_in_length); 
+
+            });
+        }
+
+        
+
+        return data;
+    },
+
     _getIndexOfFirstNonzeroFromArray:function(data) {
         var index = -1;
         Ext.Array.each(data,function(datum,idx){
@@ -220,6 +285,16 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
                 index = idx;
             }
         });
+        return index;
+    },
+
+    _getIndexOfLastNonzeroFromArray:function(data) {
+        var index = -1;
+        for (var i = data.length - 1; i >= 0; i--) {
+            if ( data[i] > 0 && index == -1 ) {
+                index = i;
+            }        
+        }
         return index;
     },
     
