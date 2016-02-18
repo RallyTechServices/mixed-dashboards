@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Burnup with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Feb 12 2016 09:41:01 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Feb 12 2016 10:55:27 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Feb 12 2016 09:41:01 GMT-0800 (PST)";
-        var CHECKSUM = 17783522847;
+        var APP_BUILD_DATE = "Fri Feb 12 2016 10:55:27 GMT-0800 (PST)";
+        var CHECKSUM = 17783525030;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>

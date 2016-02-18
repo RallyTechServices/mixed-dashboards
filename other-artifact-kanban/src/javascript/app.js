@@ -6,7 +6,11 @@ Ext.define("TSNonArtifactBoard", {
 
     settingsScope: 'project',
     autoScroll: false,
-
+    
+    mixins: [
+        'Rally.Messageable'
+    ],
+    
     config: {
         defaultSettings: {
             groupByField: 'c_CurmudgeonState',
@@ -28,6 +32,8 @@ Ext.define("TSNonArtifactBoard", {
             success: this._onModelRetrieved,
             scope: this
         });
+        
+        this.subscribe(this,'requestMilestoneFilter',this._publishFilter,this);
     },
 
     _onModelRetrieved: function(model) {
@@ -69,7 +75,9 @@ Ext.define("TSNonArtifactBoard", {
                             scope: this,
                             filterschanged: function(cb) {
                                 console.log('cb >>>>>>>>>>>',cb);
-                                this.publish('milestones_gc', cb);
+                                this.filters = cb;
+                                this._publishFilter();
+                                
 
                                 // this._publishTimebox();
                                 // this._updateData(cb.getRecord());
@@ -283,6 +291,10 @@ Ext.define("TSNonArtifactBoard", {
 //                card.getRecord().set('State', setting.stateMapping);
 //            }
         }
+    },
+
+    _publishFilter: function() {
+        this.publish('milestoneFilterChanged', this.filters);
     },
     
     getOptions: function() {
