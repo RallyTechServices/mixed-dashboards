@@ -3,11 +3,11 @@
 <head>
     <title>TS Non-Artifact Board</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Feb 12 2016 20:05:15 GMT-0800 (PST) -->
+    <!--  Build Date: Thu Feb 18 2016 20:12:52 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Feb 12 2016 20:05:15 GMT-0800 (PST)";
-        var CHECKSUM = 30042825425;
+        var APP_BUILD_DATE = "Thu Feb 18 2016 20:12:52 GMT-0500 (EST)";
+        var CHECKSUM = 30586159635;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1155,13 +1155,28 @@ Ext.define("TSNonArtifactBoard", {
 
     _getFilters: function() {
         var filters = [];
+
+        var andFilters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'Projects',
+            operator: 'contains',
+            value: this.getContext().getProject()._ref
+        });
+
+        andFilters = andFilters.or({
+            property: 'TargetProject',
+            value: null
+        });
+
         if(this.getSetting('query')) {
             filters.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
         }
         if(this.getContext().getTimeboxScope()) {
             filters.push(this.getContext().getTimeboxScope().getQueryFilter());
         }
-        return filters;
+
+        andFilters.and(filters);
+
+        return andFilters;
     },
 
     _getColumnSetting: function() {

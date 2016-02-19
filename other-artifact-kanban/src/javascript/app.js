@@ -240,13 +240,28 @@ Ext.define("TSNonArtifactBoard", {
 
     _getFilters: function() {
         var filters = [];
+
+        var andFilters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'Projects',
+            operator: 'contains',
+            value: this.getContext().getProject()._ref
+        });
+
+        andFilters = andFilters.or({
+            property: 'TargetProject',
+            value: null
+        });
+
         if(this.getSetting('query')) {
             filters.push(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
         }
         if(this.getContext().getTimeboxScope()) {
             filters.push(this.getContext().getTimeboxScope().getQueryFilter());
         }
-        return filters;
+
+        andFilters.and(filters);
+
+        return andFilters;
     },
 
     _getColumnSetting: function() {
