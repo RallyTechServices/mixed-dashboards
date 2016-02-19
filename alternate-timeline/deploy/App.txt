@@ -3,11 +3,11 @@
 <head>
     <title>TS Alternate Timeline</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Feb 18 2016 20:12:35 GMT-0500 (EST) -->
+    <!--  Build Date: Thu Feb 18 2016 20:54:00 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Feb 18 2016 20:12:35 GMT-0500 (EST)";
-        var CHECKSUM = 17535855520;
+        var APP_BUILD_DATE = "Thu Feb 18 2016 20:54:00 GMT-0500 (EST)";
+        var CHECKSUM = 17583018570;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -388,7 +388,7 @@ Ext.define("TSAlternateTimeline", {
             value: null
         });
 
-        andFilters.and(this.filter);
+        
 
         if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
             if ( Ext.isEmpty(this.chartStartDate) ) {
@@ -405,11 +405,13 @@ Ext.define("TSAlternateTimeline", {
                                     }));
             }
         }
-        
-        //andFilters = andFilters.and(filters);
-        console.log("Filter>>>>>",andFilters.toString());
 
-        return andFilters;
+            return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.filter[0].property,
+                                        operator: this.filter[0].operator,
+                                        value: this.filter[0].value
+                                    }));
+        
     },
     
     _updateData: function() {
