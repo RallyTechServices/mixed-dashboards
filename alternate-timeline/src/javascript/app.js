@@ -89,7 +89,7 @@ Ext.define("TSAlternateTimeline", {
             value: null
         });
 
-        andFilters.and(this.filter);
+        
 
         if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
             if ( Ext.isEmpty(this.chartStartDate) ) {
@@ -106,11 +106,13 @@ Ext.define("TSAlternateTimeline", {
                                     }));
             }
         }
-        
-        //andFilters = andFilters.and(filters);
-        console.log("Filter>>>>>",andFilters.toString());
 
-        return andFilters;
+            return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.filter[0].property,
+                                        operator: this.filter[0].operator,
+                                        value: this.filter[0].value
+                                    }));
+        
     },
     
     _updateData: function() {
