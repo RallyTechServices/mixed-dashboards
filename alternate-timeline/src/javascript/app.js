@@ -74,16 +74,43 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getFilters: function() {
-        this.logger.log('_getFilters:', this.filter);
+        this.logger.log('_getFilters:', this.filter.toString());
+
+        //var filters = this.filter;
+
+        var andFilters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'Projects',
+            operator: 'contains',
+            value: this.getContext().getProject()._ref
+        });
+
+        andFilters = andFilters.or({
+            property: 'TargetProject',
+            value: null
+        });
+
+        andFilters.and(this.filter);
+
         if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
             if ( Ext.isEmpty(this.chartStartDate) ) {
-                return [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}];
+                return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.getSetting('plannedEndField'),
+                                        operator: '>',
+                                        value: '2015-12-31'
+                                    }));
             } else {
-                return [{property:this.getSetting('plannedEndField'), operator: '>=', value:Rally.util.DateTime.toIsoString(this.chartStartDate)}];
+                return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.getSetting('plannedEndField'),
+                                        operator: '>=',
+                                        value: Rally.util.DateTime.toIsoString(this.chartStartDate)
+                                    }));
             }
         }
         
-        return this.filter;
+        //andFilters = andFilters.and(filters);
+        console.log("Filter>>>>>",andFilters.toString());
+
+        return andFilters;
     },
     
     _updateData: function() {

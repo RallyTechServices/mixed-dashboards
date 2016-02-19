@@ -3,11 +3,11 @@
 <head>
     <title>TS Alternate Timeline</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Feb 12 2016 20:05:36 GMT-0800 (PST) -->
+    <!--  Build Date: Thu Feb 18 2016 20:12:35 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Feb 12 2016 20:05:36 GMT-0800 (PST)";
-        var CHECKSUM = 16729920369;
+        var APP_BUILD_DATE = "Thu Feb 18 2016 20:12:35 GMT-0500 (EST)";
+        var CHECKSUM = 17535855520;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -373,16 +373,43 @@ Ext.define("TSAlternateTimeline", {
     },
     
     _getFilters: function() {
-        this.logger.log('_getFilters:', this.filter);
+        this.logger.log('_getFilters:', this.filter.toString());
+
+        //var filters = this.filter;
+
+        var andFilters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'Projects',
+            operator: 'contains',
+            value: this.getContext().getProject()._ref
+        });
+
+        andFilters = andFilters.or({
+            property: 'TargetProject',
+            value: null
+        });
+
+        andFilters.and(this.filter);
+
         if ( Ext.isEmpty(this.filter) || this.filter.length === 0) {
             if ( Ext.isEmpty(this.chartStartDate) ) {
-                return [{property:this.getSetting('plannedEndField'), operator: '>', value:'2015-12-31'}];
+                return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.getSetting('plannedEndField'),
+                                        operator: '>',
+                                        value: '2015-12-31'
+                                    }));
             } else {
-                return [{property:this.getSetting('plannedEndField'), operator: '>=', value:Rally.util.DateTime.toIsoString(this.chartStartDate)}];
+                return andFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+                                        property: this.getSetting('plannedEndField'),
+                                        operator: '>=',
+                                        value: Rally.util.DateTime.toIsoString(this.chartStartDate)
+                                    }));
             }
         }
         
-        return this.filter;
+        //andFilters = andFilters.and(filters);
+        console.log("Filter>>>>>",andFilters.toString());
+
+        return andFilters;
     },
     
     _updateData: function() {
