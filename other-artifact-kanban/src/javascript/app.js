@@ -77,10 +77,7 @@ Ext.define("TSNonArtifactBoard", {
                                 console.log('cb >>>>>>>>>>>',cb);
                                 this.filters = cb;
                                 this._publishFilter();
-                                
 
-                                // this._publishTimebox();
-                                // this._updateData(cb.getRecord());
                             }
                         },
            plugins: [
