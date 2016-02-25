@@ -20,7 +20,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     config: {
         defaultSettings: {
             showCount:  true,
-            showScopeSelector:  true,
+//            showScopeSelector:  true,
             startDateField: 'c_PlannedStartDate',
             endDateField: 'c_PlannedEndDate'
         }
@@ -33,7 +33,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
         var settings = this.getSettings();
         
         // if ( settings.showScopeSelector == true || settings.showScopeSelector == "true" ) {
-            this._addSelector();
+        this._addSelector();
             //this.subscribe(this,'requestTimebox',this._publishTimebox,this);
         // } else {
         //     this.logger.log('cfd, subscribing');
@@ -335,14 +335,14 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
     getSettingsFields: function() {
         me = this;
         return [
-            {
-                name: 'showScopeSelector',
-                xtype: 'rallycheckboxfield',
-                boxLabelAlign: 'after',
-                fieldLabel: '',
-                margin: '0 0 25 200',
-                boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
-            },
+            // {
+            //     name: 'showScopeSelector',
+            //     xtype: 'rallycheckboxfield',
+            //     boxLabelAlign: 'after',
+            //     fieldLabel: '',
+            //     margin: '0 0 25 200',
+            //     boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+            // },
             {
                 name: 'showCount',
                 xtype: 'rallycheckboxfield',
