@@ -137,7 +137,8 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
             fetch: ['FormattedID','ObjectID'],
             context: {
                 project: null
-            }
+            },
+            limit:Infinity
         };
         
         return this._loadWsapiRecords(config);
@@ -159,6 +160,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                     'ObjectID': { '$in': me.story_oids },
                     '_TypeHierarchy': 'HierarchicalRequirement'
                 },
+                useHttpPost:true,
                 fetch: ['ScheduleState','PlanEstimate'],
                 hydrate: ['ScheduleState'],
                 sort: {

@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone CFD with Common Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Feb 18 2016 13:36:00 GMT-0500 (EST) -->
+    <!--  Build Date: Tue Mar 01 2016 09:43:52 GMT-0500 (EST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Feb 18 2016 13:36:00 GMT-0500 (EST)";
-        var CHECKSUM = 16797795970;
+        var APP_BUILD_DATE = "Tue Mar 01 2016 09:43:52 GMT-0500 (EST)";
+        var CHECKSUM = 16856449251;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -649,7 +649,8 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
             fetch: ['FormattedID','ObjectID'],
             context: {
                 project: null
-            }
+            },
+            limit:Infinity
         };
         
         return this._loadWsapiRecords(config);
@@ -671,6 +672,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
                     'ObjectID': { '$in': me.story_oids },
                     '_TypeHierarchy': 'HierarchicalRequirement'
                 },
+                useHttpPost:true,
                 fetch: ['ScheduleState','PlanEstimate'],
                 hydrate: ['ScheduleState'],
                 sort: {
