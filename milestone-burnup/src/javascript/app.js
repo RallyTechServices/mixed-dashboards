@@ -123,12 +123,14 @@ Ext.define("TSMilestoneBurnupWithCommonSelector", {
             storeConfig: {
                 find: {
                     'Milestones': me._getMilestoneObjectID(),
-                    '_TypeHierarchy': 'PortfolioItem'
+                    '_TypeHierarchy': 'HierarchicalRequirement'
                 },
-                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualStartDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
+                //fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualStartDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
+                fetch: ['PlanEstimate','ScheduleState'],
                 sort: {
                     "_ValidFrom": 1
-                }
+                },
+                hydrate:['ScheduleState']
             },
             calculatorType: 'Rally.techservices.burn.MilestoneBurnCalculator',
             calculatorConfig: {

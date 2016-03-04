@@ -123,7 +123,7 @@ Ext.define("TSMilestoneCFDWithCommonSelector", {
         
         var milestone_filter = Rally.data.wsapi.Filter.or([
             // TODO: get Feature field name from settings
-            {property:'Feature.Milestones.ObjectID',operator:'contains',value:milestone.get('ObjectID')},
+            //{property:'Feature.Milestones.ObjectID',operator:'contains',value:milestone.get('ObjectID')},
             {property:'Milestones.ObjectID',operator:'contains',value:milestone.get('ObjectID')}
         ]);
         
