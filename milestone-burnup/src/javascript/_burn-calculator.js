@@ -40,18 +40,55 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
     getDerivedFieldsOnInput: function () {
         var acceptedStateNames = this.config.completedScheduleStateNames;
 
+        // if (this.config.chartAggregationType === 'storycount') {
+        //     return [
+        //         {
+        //             "as": "StoryCount",
+        //             "f": function(snapshot) {
+        //                 return snapshot.LeafStoryCount || 0;
+        //             }
+        //         },
+        //         {
+        //             "as": "AcceptedStoryCount",
+        //             "f": function(snapshot) {
+        //                 return snapshot.AcceptedLeafStoryCount || 0;
+        //             }
+        //         }
+        //     ];
+        // } else {
+        //     return [
+        //         {
+        //             "as": "StoryPoints",
+        //             "f": function(snapshot) {
+        //                 return snapshot.LeafStoryPlanEstimateTotal || 0;
+        //             }
+        //         },
+        //         {
+        //             "as": "AcceptedStoryPoints",
+        //             "f": function(snapshot) {
+        //                 return snapshot.AcceptedLeafStoryPlanEstimateTotal || 0;
+        //             }
+        //         }
+        //     ];
+        // }
+
         if (this.config.chartAggregationType === 'storycount') {
             return [
                 {
                     "as": "StoryCount",
                     "f": function(snapshot) {
-                        return snapshot.LeafStoryCount || 0;
+                        return 1;
                     }
                 },
                 {
                     "as": "AcceptedStoryCount",
                     "f": function(snapshot) {
-                        return snapshot.AcceptedLeafStoryCount || 0;
+                        if(snapshot.ScheduleState == 'Accepted'){
+                            return 1;
+                        }else{
+                            return 0;
+                        }
+                        
                     }
                 }
             ];
@@ -60,17 +97,24 @@ Ext.define("Rally.techservices.burn.MilestoneBurnCalculator", {
                 {
                     "as": "StoryPoints",
                     "f": function(snapshot) {
-                        return snapshot.LeafStoryPlanEstimateTotal || 0;
+                        //retrun planestimate
+                        return snapshot.PlanEstimate;
                     }
                 },
                 {
                     "as": "AcceptedStoryPoints",
                     "f": function(snapshot) {
-                        return snapshot.AcceptedLeafStoryPlanEstimateTotal || 0;
+                        //check if accepted planestimate
+                        if(snapshot.ScheduleState == 'Accepted'){
+                            return snapshot.PlanEstimate;
+                        }else{
+                            return 0;
+                        }
                     }
                 }
             ];
         }
+        
     },
 
     getMetrics: function() {

@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TS Release Burnup with Common Selector</title>
+    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
+    <!--  Build Date: Thu Mar 03 2016 09:55:16 GMT-0500 (EST) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Thu Mar 03 2016 09:55:16 GMT-0500 (EST)";
+        var CHECKSUM = [%= checksum %];
+    </script>
+    
+    <script type="text/javascript" src="https://us1.rallydev.com/apps/2.0/sdk-debug.js?apiKey=_6FZTpYVTSqJ9TmYunoYvQKnonFX0lo5kmQbGGCOQ"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+Ext.define("Rally.techservices.Colors", {
+    singleton: true,
+    
+    // RGB values obtained from here: http://ux-blog.rallydev.com/?cat=23
+    grey4: "#C0C0C0",  // $grey4
+    orange: "#FF8200",  // $orange
+    gold: "#F6A900",  // $gold
+    yellow: "#FAD200",  // $yellow
+    lime: "#8DC63F",  // $lime
+    green_dk: "#1E7C00",  // $green_dk
+    blue_link: "#337EC6",  // $blue_link
+    blue: "#7FAEDB",  // $blue
+    purple : "#7832A5",  // $purple,
+    pink : "#DA1884",   // $pink,
+    grey7 : "#666",
+    black: '#000',
+
+    getCumulativeFlowColors : function() {
+        return [
+            this.grey4, this.orange, this.gold, this.yellow, this.lime, this.green_dk, this.blue_link, this.blue, this.purple, this.pink
+        ];
+    },
+    
+    getTimelineColors: function() {
+        return [
+            this.grey4, this.blue
+        ];
+    },
+
+    getBurnLineColor : function (){ return this.blue; },
+    
+    getTrendLineColor : function (){ return this.black; },
+    
+    getBurnColumnColor : function() { return this.lime; }
+});
+
+(function () {
+    var Ext = window.Ext4 || window.Ext;
+
+    Ext.define("Rally.apps.charts.DateMixin", {
+
+        dateFormattersHighcharts: [
+            {key: "MMM", value: "%b"},
+            {key: "MM", value: "%m"},
+            {key: "dd", value: "%d"},
+            {key: "yyyy", value: "%Y"}
+        ],
+
+        dateFormatters: [
+            {key: "MMM", value: "M"},
+            {key: "MM", value: "m"},
+            {key: "dd", value: "d"},
+            {key: "yyyy", value: "Y"}
+        ],
+
+        
+        dateToStringDisplay: function (date) {
+            return Ext.Date.format(date, 'm/d/Y');
+        },
+
+        dateToString: function (date) {
+            return Ext.Date.format(date, 'Y-m-d\\TH:i:s.u\\Z');
+        },
+
+        dateStringToObject: function (dateStr) {
+            var finalIndex = dateStr.indexOf('T'),
+                dateObj;
+
+            if (finalIndex > -1) {
+                dateStr = dateStr.slice(0, dateStr.indexOf('T'));
+            }
+
+            dateObj = this._splitDateParts(dateStr);
+
+            return new Date(dateObj.year, dateObj.month, dateObj.day);
+        },
+
+        _splitDateParts: function (dateStr) {
+            if (this._shouldSplitOnDash(dateStr)) {
+                return this._objectFromYearFirstDate(dateStr.split('-'));
+            }
+            else {
+                return this._objectFromMonthFirstDate(dateStr.split('/'));
+            }
+        },
+
+        _objectFromYearFirstDate: function (dateArray) {
+            if (dateArray.length !== 3) {
+                return { year: 0, month: 0, day: 0 };
+            }
+
+            dateArray[1] = (parseInt(dateArray[1], 10) - 1).toString();
+
+            return {
+                year: dateArray[0],
+                month: dateArray[1],
+                day: dateArray[2]
+            };
+        },
+
+        _objectFromMonthFirstDate: function (dateArray) {
+            if (dateArray.length !== 3) {
+                return { year: 0, month: 0, day: 0 };
+            }
+
+            dateArray[0] = (parseInt(dateArray[0], 10) - 1).toString();
+
+            return {
+                month: dateArray[0],
+                day: dateArray[1],
+                year: dateArray[2]
+            };
+        },
+
+        _shouldSplitOnDash: function (dateStr) {
+            return dateStr.split('-').length === 3;
+        }
+
+    });
+
+}());
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Rally.ui.dialog.Dialog',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+    title: "Build Information",
+    
+    defaults: { padding: 5, margin: 5 },
+
+    closable: true,
+     
+    draggable: true,
+
+    autoShow: true,
+   
+    width: 350, 
+    
+    initComponent: function() {
+        var id = Ext.id(this);
+        this.title =  "<span class='icon-help'> </span>" + this.title;
+        this.callParent(arguments);
+    },
+    
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
+        
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+    
+        return chk;
+    },
+    
+    _checkChecksum: function(container) {
+        var deferred = Ext.create('Deft.Deferred');
+        console.log("_checkChecksum", container);
+        var me = this;
+        
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    if ( CHECKSUM !== me._generateChecksum(text) ) {
+                        console.log("Checksums don't match!");
+                        deferred.resolve(false);
+                        return;
+                    }
+                }
+                deferred.resolve(true);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
+    afterRender: function() {
+        var app = Rally.getApp();
+        
+        if (! app.isExternal() ) {
+                
+            this._checkChecksum(app).then({
+                scope: this,
+                success: function(result){
+                    if ( !result ) {
+                        this.addDocked({
+                            xtype:'container',
+                            cls: 'build-info',
+                            padding: 2,
+                            html:'<span class="icon-warning"> </span>Checksums do not match'
+                        });
+                    }
+                },
+                failure: function(msg){
+                    console.log("oops:",msg);
+                }
+            });
+        } else {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'... Running externally'
+            });
+        }
+        this.callParent(arguments);
+    },
+    
+    beforeRender: function() {
+        var me = this;
+        this.callParent(arguments);
+
+        if (this.informationHtml) {
+            this.addDocked({
+                xtype: 'component',
+                componentCls: 'intro-panel',
+                padding: 2,
+                html: this.informationHtml
+            });
+        }
+        
+        this.addDocked({
+            xtype:'container',
+            cls: 'build-info',
+            padding: 2,
+            html:"This app was created by the Rally Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'Build date/time: ' + APP_BUILD_DATE
+            });
+        }
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+Ext.define("Rally.techservices.burn.ReleaseBurnCalculator", {
+    extend: "Rally.data.lookback.calculator.TimeSeriesCalculator",
+
+    config: {
+        /**
+         * @cfg {Boolean} hideBarsAfterToday
+         * True to not display the completion bars on the chart if it extends beyond
+         * the day that the app is run.  Defaults to false (show all bars flattened
+         * to the right of today).
+         */
+        hideBarsAfterToday: false,
+        /**
+         * 
+         * @type { Object } PI
+         * The release the chart is based on. 
+         * (Passed in as an object (record.getData()).
+         * Used for planned end date calcs.)
+         * 
+         */
+        release: null,
+        
+        /**
+         * 
+         * @cfg {Boolean} showTrend
+         * Pass true to show a trend line from the actual start through the value 
+         * of today and intersecting the scope line.  
+         * 
+         * For the trend line to show:
+         * * This must be true
+         * * There must be at least two accepted values
+         * * There must not be an actual end date
+         * * Today must be on the chart
+         */
+        showTrend: true,
+        trendColor: null,
+        
+        plotLines: []
+    },
+
+    getDerivedFieldsOnInput: function () {
+        var acceptedStateNames = this.config.completedScheduleStateNames;
+
+        if (this.config.chartAggregationType === 'storycount') {
+            return [
+                {
+                    "as": "StoryCount",
+                    "f": function(snapshot) {
+                        return snapshot.LeafStoryCount || 0;
+                    }
+                },
+                {
+                    "as": "AcceptedStoryCount",
+                    "f": function(snapshot) {
+                        return snapshot.AcceptedLeafStoryCount || 0;
+                    }
+                }
+            ];
+        } else {
+            return [
+                {
+                    "as": "StoryPoints",
+                    "f": function(snapshot) {
+                        return snapshot.LeafStoryPlanEstimateTotal || 0;
+                    }
+                },
+                {
+                    "as": "AcceptedStoryPoints",
+                    "f": function(snapshot) {
+                        return snapshot.AcceptedLeafStoryPlanEstimateTotal || 0;
+                    }
+                }
+            ];
+        }
+    },
+
+    getMetrics: function() {
+        if(this.config.chartAggregationType === 'storycount') {
+            return [
+                {
+                    "field": "StoryCount",
+                    "as": "Planned",
+                    "f": "sum",
+                    "display": "line"
+                },
+                {
+                    "field": "AcceptedStoryCount",
+                    "as": "Accepted",
+                    "f": "sum",
+                    "display": "column"
+                }
+            ];
+        } else {
+            return [
+                {
+                    "field": "StoryPoints",
+                    "as": "Planned",
+                    "display": "line",
+                    "f": "sum"
+                },
+                {
+                    "field": "AcceptedStoryPoints",
+                    "as": "Accepted",
+                    "f": "sum",
+                    "display": "column"
+                }
+            ];
+        }
+    },
+
+    runCalculation: function (snapshots, snapshotsToSubtract) {
+        var highcharts_data = this.callParent(arguments);
+        //console.log('inside runCalculation >>>',highcharts_data)
+        var initial_length = highcharts_data.categories.length
+
+        if ( this.hideBarsAfterToday ) {
+            highcharts_data = this._stripFutureBars(highcharts_data);
+        }
+        
+        if ( this.showTrend ) {
+            highcharts_data = this._addTrend(highcharts_data);
+        }
+        
+        this._addPlotlines(highcharts_data);
+        
+        this._stripBarsAfterInitalLengh(highcharts_data,initial_length);    
+        
+
+        return highcharts_data;
+    },
+    
+    _getDateIndexFromDate: function(highcharts_data, check_date) {
+        var date_iso = Rally.util.DateTime.toIsoString(new Date(check_date),true).replace(/T.*$/,'');
+        var date_index = -1;
+                
+        Ext.Array.each(highcharts_data.categories, function(category,idx) {
+            
+            if (category >= date_iso && date_index == -1 ) {
+                date_index = idx;
+            }
+        });
+        
+        if ( date_index === 0 ) {
+            return date_index = -1;
+        }
+        return date_index;
+    },
+    
+    _addPlotlines: function(data) {
+        
+        this.plotLines = [];
+        
+        var today_index = this._getDateIndexFromDate(data,new Date());
+        if ( today_index > -1 ) {
+            this.plotLines.push({
+                color: '#000',
+                label: { text: 'today' },
+                width: 2,
+                value: today_index
+            });
+        }
+        
+        var planned_end_date = null;
+        
+        if ( this.release && this.release.TargetDate ) {
+            planned_end_date = this.release.TargetDate;
+        }
+        
+        if ( planned_end_date ) {
+            var end_date_index = this._getDateIndexFromDate(data, Rally.util.DateTime.add( planned_end_date, 'day', -1 ));
+            
+            if ( end_date_index > -1 ) {
+                
+                this.plotLines.push({
+                    color: '#000',
+                    label: { text: 'planned end' },
+                    width: 2,
+                    value: end_date_index
+                });
+            }
+        }
+
+        if ( this.trend_date ) {
+            
+            var show_line = true;
+            if ( planned_end_date && Math.abs(Rally.util.DateTime.getDifference(this.trend_date, planned_end_date, 'day')) < 4 ) {
+                show_line = false;
+            }
+            
+            var projected_date_index = this._getDateIndexFromDate(data, this.trend_date);
+            
+            if ( end_date_index > -1 && show_line ) {
+                this.plotLines.push({
+                    color: '#000',
+                    label: { text: 'projected end' },
+                    width: 2,
+                    value: projected_date_index
+                });
+            }
+        }
+    },
+    
+    _stripFutureBars: function(data) {
+        var today_index = this._getDateIndexFromDate(data,new Date());
+        
+        if ( today_index > -1 ) {
+            Ext.Array.each(data.series, function(series) {
+                if ( series.name == "Accepted" ) {
+                    Ext.Array.each( series.data, function(datum,idx){
+                        if ( idx > today_index ) {
+                            series.data[idx] = null;
+                        }
+                    });
+                }
+            });
+        }
+        
+        return data;
+    },
+    
+    //calculates the midpoint on the trendline and strips rest of the x axis.
+    // http://classroom.synonym.com/calculate-trendline-2709.html
+    //http://cs.selu.edu/~rbyrd/math/slope/
+
+    _stripBarsAfterInitalLengh: function(data,initial_length) {
+        
+        var difference_in_length = data.categories.length - initial_length;
+        
+        data.categories.splice(initial_length,difference_in_length); 
+        var trend_series = [];
+        Ext.Array.each(data.series, function(series) {
+            if ( series.name == "Trend" ) {
+                trend_series = series;
+            }
+        });
+
+        if(trend_series.data){
+            var x1 = this._getIndexOfFirstNonzeroFromArray(trend_series.data); //index of first non zero value on trend series
+            var y1 = trend_series.data[x1]; //first non zero value on trend series
+
+            var x2 = this._getIndexOfLastNonzeroFromArray(trend_series.data) ; //index of last non zero element
+            var y2 = trend_series.data[x2];
+
+            //calculate slope based on the above values
+
+            // var sum_xy = 2 * ((x1 * y1) + (x2 * y2))
+
+            // var sumx_sumy = (x1 + x2) * (y1 + y2);
+
+            // var sum_sq_x = 2 * (x1*x1 + x2*x2);
+
+            // var sum_x_sq = (x1 + x2) * (x1 + x2);
+
+            // var slope = (sum_xy - sumx_sumy) / (sum_sq_x - sum_x_sq);
+
+            var slope = (y2 - y1) / (x2 - x1);
+
+            // calculate y-intercept
+
+            var sum_y = y1 + y2;
+
+            var slope_x = slope * (x1 + x2);
+
+            var y_intercept = (sum_y - slope_x) / 2 
+
+            var new_end_value = slope * initial_length + y_intercept
+
+            Ext.Array.each(data.series, function(series) {
+                if ( series.name == "Trend" ) {
+                    series.data[series.data.length] = new_end_value;
+                }
+                series.data.splice(initial_length,difference_in_length); 
+
+            });
+        }
+
+        
+
+        return data;
+    },
+
+    _getIndexOfFirstNonzeroFromArray:function(data) {
+        var index = -1;
+        Ext.Array.each(data,function(datum,idx){
+            if ( datum > 0 && index == -1 ) {
+                index = idx;
+            }
+        });
+        return index;
+    },
+
+    _getIndexOfLastNonzeroFromArray:function(data) {
+        var index = -1;
+        for (var i = data.length - 1; i >= 0; i--) {
+            if ( data[i] > 0 && index == -1 ) {
+                index = i;
+            }        
+        }
+        return index;
+    },
+    
+    _addTrend: function(data) {
+        console.log('inside _addTrend >>', data)
+        // if ( Ext.isEmpty(this.PI) && Ext.isEmpty(this.PIs)) {
+        //     return data;
+        // }
+
+        var accepted_series = [];
+        var scope_series = [];
+        
+        Ext.Array.each( data.series, function(s) {
+            if ( s.name == "Accepted" ) {
+                accepted_series = s;
+            }
+            if ( s.name == "Planned" ) {
+                scope_series = s;
+            }
+        });
+        
+        var index_of_first_accepted = -1;
+        // is there an actual value today?  
+        var index_of_today = this._getDateIndexFromDate(data,new Date());
+        if ( index_of_today <= 0 ) {
+            // need at least two days of data
+            console.log("Cannot show trend because the chart needs to start before today");
+            return data;
+        }
+        
+        var index_of_first_nonzero = this._getIndexOfFirstNonzeroFromArray(accepted_series.data);
+
+        var today_actual = accepted_series.data[index_of_today];
+        var first_actual = accepted_series.data[index_of_first_nonzero];
+
+        if ( today_actual <= first_actual ) {
+            console.log("There's no slope to show because current actual is less than or equal to first actual");
+            return data;
+        }
+        
+        var slope =  ( today_actual - first_actual ) / ( index_of_today - index_of_first_nonzero ) ;
+        
+        var scope = scope_series.data[index_of_today];
+        
+        var calculation_date_limit = Rally.util.DateTime.add(new Date(), 'year', 2);
+        this.trend_date = new Date();
+        var trend_value = today_actual;
+        
+        while ( this.trend_date < calculation_date_limit && trend_value <= scope ) {
+            this.trend_date = Rally.util.DateTime.add(this.trend_date,'day',1);
+            this.trend_date = this._shiftOffWeekend(this.trend_date);
+            trend_value = trend_value + slope;
+        }
+        
+        //this.PI.ProjectedEndDate = this.trend_date;
+        data = this._setTrendLineSeries(data, index_of_first_nonzero, first_actual, this.trend_date, scope);
+        console.log('exit _addTrend >>', data)
+
+        return data;
+    },
+    
+    _shiftOffWeekend: function(check_date) {
+        if (check_date.getDay() == 6) {check_date = Rally.util.DateTime.add(check_date,'day',1);} // Saturday
+        if (check_date.getDay() == 0) {check_date = Rally.util.DateTime.add(check_date,'day',1);} // Sunday
+        
+        return check_date;
+    },
+    
+    _setTrendLineSeries: function(data, index_of_first_nonzero, first_actual, end_date, end_value) {
+        
+        var end_date_iso = Rally.util.DateTime.toIsoString(end_date).replace(/T.*$/,'');
+        var current_chart_end = data.categories[ data.categories.length - 1];
+        
+        if ( current_chart_end < end_date_iso ) {
+            data = this._padDates(data, current_chart_end, end_date);
+        }
+        
+        var index_of_end = this._getDateIndexFromDate(data,end_date);
+        var trend_data = [];
+        
+        for ( var i=0; i<data.categories.length; i++) {
+            if ( i==index_of_end ) { 
+                trend_data.push(end_value); 
+            } else if ( i==index_of_first_nonzero ) { 
+                trend_data.push(first_actual); 
+            } else {
+                trend_data.push(null);
+            }
+        }
+        data.series.push({
+            color: this.trendColor || Rally.techservices.Colors.getTrendLineColor() || 'black',
+            dashStyle: 'Solid',
+            data: trend_data,
+            name: 'Trend',
+            type: 'line',
+            connectNulls: true
+        });
+        return data;
+        
+    },
+    
+    _padDates: function(data,current_end,new_end_date) {
+        var count_beyond_current = 0;
+        var next_day = Rally.util.DateTime.fromIsoString(current_end);
+                
+        while ( next_day < new_end_date ) {            
+            next_day = Rally.util.DateTime.add(next_day, 'day', 1);
+            next_day = this._shiftOffWeekend(next_day);
+            var next_day_iso = Rally.util.DateTime.toIsoString(next_day).replace(/T.*$/,'');
+            
+            if ( next_day_iso != current_end ) {
+                data.categories.push(next_day_iso);
+                count_beyond_current++;
+            }
+        }
+        
+        var accepted_series = [];
+        var scope_series = [];
+        
+        Ext.Array.each( data.series, function(s) {
+            if ( s.name == "Accepted" ) {
+                accepted_series = s;
+            }
+            if ( s.name == "Planned" ) {
+                scope_series = s;
+            }
+        });
+        
+        var scope = scope_series.data[scope_series.data.length-1];
+        for ( var i=0; i<count_beyond_current; i++ ) {
+            scope_series.data.push(scope);
+            accepted_series.data.push(null);
+        }
+        
+        data.series = [scope_series, accepted_series];
+        return data;
+        
+    }
+        
+});
+Ext.define("TSReleaseBurnupWithCommonSelector", {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    defaults: { margin: 10 },
+    items: [
+        {xtype:'container',itemId:'selector_box'},
+        {xtype:'container',itemId:'display_box'}
+    ],
+    
+    mixins: [
+        'Rally.apps.charts.DateMixin',
+        'Rally.Messageable'
+    ],
+
+    integrationHeaders : {
+        name : "TSReleaseBurnupWithCommonSelector"
+    },
+    
+    config: {
+        defaultSettings: {
+            showCount:  true,
+            showScopeSelector:  true,
+            startDateField: 'c_PlannedStartDate',
+            endDateField: 'c_PlannedEndDate'
+        }
+    },
+
+    launch: function() {
+        var me = this;
+        this._setupEvents();
+        
+        var settings = this.getSettings();
+        
+        if ( settings.showScopeSelector == true || settings.showScopeSelector == "true" ) {
+            this._addSelector();
+            this.subscribe(this,'requestTimebox',this._publishTimebox,this);
+        } else {
+            this.logger.log('burnup, subscribing');
+            this.subscribe(this, 'timeboxChanged', this._updateData, this);
+            this.logger.log('requesting current timebox');
+            this.publish('requestTimebox', this);
+        }
+    },
+
+    _addSelector: function() {
+        var selector_box = this.down('#selector_box');
+            selector_box.removeAll();
+            
+        // var filters = Ext.create('Rally.data.wsapi.Filter',{
+        //     property: 'Projects',
+        //     operator: 'contains',
+        //     value: this.getContext().getProject()._ref
+        // });
+
+        // filters = filters.or({
+        //     property: 'TargetProject',
+        //     value: null
+        // });
+
+
+        selector_box.add({
+            xtype:'rallyreleasecombobox',
+            stateful: true,
+            stateId: this.getContext().getScopedStateId('release-cb'),
+            width: 200,
+            fieldLabel: 'Release',
+            labelAlign: 'right',
+            context: this.getContext(),
+            typeAhead : true,
+            typeAheadDelay: 100,
+            //autoSelect: false,
+            // minChars: 1, 
+            // storeConfig: {
+            //     filters: filters,
+            //     remoteFilter: true
+            // },
+            listeners: {
+                scope: this,
+                change: function(cb) {
+                    this._publishTimebox();
+                    this._updateData(cb.getRecord());
+                }
+            }
+        });
+    },
+
+    _publishTimebox: function() {
+        this.logger.log("Publish timebox");
+        var cb = this.down('rallyreleasecombobox');
+        if ( cb ) {
+            this.publish('timeboxChanged', cb.getRecord());
+        }
+    },
+    
+    _setupEvents: function () {
+        this.addEvents(
+            'updateBeforeRender',
+            'updateAfterRender'
+        );
+    },
+    
+    _updateData: function(timebox) {
+        this.logger.log('_updateData', timebox);
+        this.release = timebox;
+        
+        var display_box = this.down('#display_box');
+        display_box.removeAll();
+        display_box.add(this._getChartConfig());
+    },
+    
+    _getReleaseObjectID: function() {
+        return this.release && this.release.get('ObjectID');
+    },
+    
+    _getChartConfig: function() {
+        var me = this;
+        return {
+            xtype: 'rallychart',
+            queryErrorMessage: "No data to display.<br /><br />Most likely, stories are either not yet available or started for this Release.",
+            
+            storeType: 'Rally.data.lookback.SnapshotStore',
+            storeConfig: {
+                find: {
+                    'Release': me._getReleaseObjectID(),
+                    '_TypeHierarchy': 'PortfolioItem'
+                },
+                fetch: ['AcceptedLeafStoryCount','AcceptedLeafStoryPlanEstimateTotal','ActualStartDate','ActualStartDate','LeafStoryCount','LeafStoryPlanEstimateTotal'],
+                sort: {
+                    "_ValidFrom": 1
+                }
+            },
+            calculatorType: 'Rally.techservices.burn.ReleaseBurnCalculator',
+            calculatorConfig: {
+                workDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                timeZone: "GMT",
+                completedScheduleStateNames: ["Accepted"],
+                hideBarsAfterToday: true,
+                showTrend: true,
+                chartAggregationType: me.getSetting('showCount') ? "storycount" : "storypoints",
+                release: me.release.getData(),
+                startDate: me.release.get(me.getSetting('chartBeginField')),
+                endDate: me.release.get(me.getSetting('chartEndField'))
+            },
+            
+            chartColors: [],
+            
+            chartConfig: {
+                chart: {
+                },
+                
+                title: me._buildChartTitle(me.release),
+                xAxis: me._buildXAxis(),
+                yAxis: me._buildYAxis(),
+                tooltip: {
+                    formatter: function () {
+                        return "" + this.x + "<br />" + this.series.name + ": " + this.y;
+                    }
+                },
+                plotOptions: {
+                    series: {
+                        marker: {
+                            enabled: false,
+                            states: {
+                                hover: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        groupPadding: 0.01
+                    },
+                    line: {
+                        color: Rally.techservices.Colors.getBurnLineColor()
+                    },
+                    column: {
+                        stacking: null,
+                        color: Rally.techservices.Colors.getBurnColumnColor(),
+                        shadow: false
+                    }
+                }
+            }
+        }
+    },
+    
+    _buildChartTitle: function (artifacts) {
+        this.logger.log('_buildChartTitle', artifacts);
+        
+        var widthPerCharacter = 10,
+            totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
+            title = "Release Chart",
+            align = "center";
+
+        if (!Ext.isEmpty(artifacts)) {
+            if ( !Ext.isArray(artifacts) ) { artifacts = [artifacts]; }
+            
+            if ( artifacts.length == 1 ) {
+                title = artifacts[0].get('FormattedID') + ": " + artifacts[0].get('Name');
+            } else if ( artifacts.length > 1 ) {
+                title = Ext.Array.map(artifacts, function(artifact) { return artifact.get('FormattedID'); }).join(',');
+            }
+        }
+
+        if (totalCharacters < title.length) {
+            title = title.substring(0, totalCharacters) + "...";
+            align = "left";
+        }
+
+        return {
+            text: title,
+            align: align,
+            margin: 30
+        };
+    },
+    
+    _buildXAxis: function() {
+        var me = this;
+        return {
+            categories: [],
+            tickmarkPlacement: "on",
+            tickInterval: 5,
+            title: {
+//                text: "Days",
+//                margin: 10
+            },
+            labels: {
+                x: 0,
+                y: 20,
+                formatter: function () {
+                    return me._formatDate(me.dateStringToObject(this.value));
+                }
+            }
+        };
+    },
+    
+    _buildYAxis: function() {
+        var me = this;
+        return [
+            {
+                title: {
+                    text: me.getSetting('showCount') ? "Count" : "Points"
+                }
+            }
+        ];
+    },
+    
+    _getRallyDateFormat: function () {
+        var dateFormat = this._getUserConfiguredDateFormat() || this._getWorkspaceConfiguredDateFormat();
+
+        for (var i = 0; i < this.dateFormatters.length; i++) {
+            dateFormat = dateFormat.replace(this.dateFormatters[i].key, this.dateFormatters[i].value);
+        }
+
+        return dateFormat;
+    },
+
+    _formatDate: function (date) {
+        if (!this.dateFormat) {
+            this.dateFormat = this._getRallyDateFormat();
+        }
+
+        return Ext.Date.format(date, this.dateFormat);
+    },
+    
+    _getUserConfiguredDateFormat: function () {
+        return this.getContext().getUser().UserProfile.DateFormat;
+    },
+
+    _getWorkspaceConfiguredDateFormat: function () {
+        return this.getContext().getWorkspace().WorkspaceConfiguration.DateFormat;
+    },
+    
+    getSettingsFields: function() {
+        var me = this;
+
+        return [
+            {
+                name: 'showScopeSelector',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Show Scope Selector<br/><span style="color:#999999;"><i>Tick to use this to broadcast settings.</i></span>'
+            },
+            {
+                name: 'showCount',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Show by Count<br/><span style="color:#999999;"><i>Tick to use story count.  Otherwise, uses story points.</i></span>'
+            },
+            {
+            name: 'chartBeginField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart Begin Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Release',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
+            },
+            {
+            name: 'chartEndField',
+            xtype: 'rallyfieldcombobox',
+            fieldLabel: 'Chart End Field',
+            labelWidth: 75,
+            labelAlign: 'left',
+            minWidth: 200,
+            margin:  '0 0 25 200',
+            autoExpand: false,
+            alwaysExpanded: false,
+            model: 'Release',
+            listeners: {
+                //TODO filterout date fields
+                    ready: function(field_box) {
+                        me._filterOutExceptDates(field_box.getStore());
+                    }
+                },
+                readyEvent: 'ready'
+            }
+        ];
+    },
+    
+    _filterOutExceptDates: function(store) {
+        var app = Rally.getApp();
+        this.logger.log('_filterOutExceptChoices');
+        
+        store.filter([{
+            filterFn:function(field){ 
+                var attribute_definition = field.get('fieldDefinition').attributeDefinition;
+                var attribute_type = null;
+                if ( attribute_definition ) {
+                    attribute_type = attribute_definition.AttributeType;
+                }
+                if (  attribute_type == "BOOLEAN" ) {
+                    return false;
+                }
+                if ( attribute_type == "DATE") {
+                    if ( !field.get('fieldDefinition').attributeDefinition.Constrained ) {
+                        return true;
+                    }
+                }
+                return false;
+            } 
+        }]);
+    },
+    getOptions: function() {
+        return [
+            {
+                text: 'About...',
+                handler: this._launchInfo,
+                scope: this
+            }
+        ];
+    },
+    
+    _launchInfo: function() {
+        if ( this.about_dialog ) { this.about_dialog.destroy(); }
+        this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
+    },
+    
+    isExternal: function(){
+        return typeof(this.getAppId()) == 'undefined';
+    },
+    
+    //onSettingsUpdate:  Override
+    onSettingsUpdate: function (settings){
+        this.logger.log('onSettingsUpdate',settings);
+        // Ext.apply(this, settings);
+        this.launch();
+    }
+});
+            
+               Rally.launchApp('TSReleaseBurnupWithCommonSelector', {
+                   name: 'TS Release Burnup with Common Selector'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
